@@ -19,7 +19,7 @@ line and can explain all of it. Cited in the README.
 """
 
 from board import Board, load_board
-from errors import AlreadyClaimedError, StageFullError
+from errors import AlreadyClaimedError, GiraffeError, StageFullError
 from items import Chore, ReferralRequest, User, WorkflowStage
 
 
@@ -73,7 +73,7 @@ def build_referral_board() -> Board:
     return board
 
 
-def main() -> None:
+def run_demo() -> None:
     # --- Chores board: normal use, then a double claim ---------------------
     chores = build_chores_board()
 
@@ -121,6 +121,64 @@ def main() -> None:
         # Same describe() call on every item; each kind prints itself.
         for item in loaded.items:
             print("  ", item.describe())
+
+
+def run_interactive() -> None:
+    """Let the user operate either of the sample boards."""
+    boards = {"1": build_chores_board(), "2": build_referral_board()}
+    while True:
+        section("Choose a board")
+        print("1. Chores\n2. Referrals\n0. Back to mode selection")
+        choice = input("Board: ").strip()
+        if choice == "0":
+            return
+        if choice not in boards:
+            print("Please enter 1, 2, or 0.")
+            continue
+        board = boards[choice]
+        while True:
+            print(board.describe())
+            print("1. Claim item\n2. Move item\n3. Add comment\n0. Choose another board")
+            action = input("Action: ").strip()
+            if action == "0":
+                break
+            if action not in ("1", "2", "3"):
+                print("Please enter 1, 2, 3, or 0.")
+                continue
+            item_id = input("Item ID: ").strip()
+            try:
+                if action == "1":
+                    print("Users:", ", ".join(user.user_id for user in board.users))
+                    board.claim(item_id, input("User ID: ").strip())
+                elif action == "2":
+                    print("Stages:", ", ".join(stage.name for stage in board.stages))
+                    board.move(item_id, input("Destination stage: ").strip())
+                else:
+                    board.add_comment(item_id, input("Comment: ").strip())
+            except GiraffeError as error:
+                print("Rejected:", error)
+
+
+def main() -> None:
+    """Choose interactive input or the original scripted demonstration."""
+    try:
+        while True:
+            section("Giraffe demo mode")
+            print("1. Interactive (enter your own actions)")
+            print("2. Existing demo (run the prepared story)")
+            print("0. Exit")
+            choice = input("Mode: ").strip()
+            if choice == "1":
+                run_interactive()
+            elif choice == "2":
+                run_demo()
+                return
+            elif choice == "0":
+                return
+            else:
+                print("Please enter 1, 2, or 0.")
+    except (EOFError, KeyboardInterrupt):
+        print("\nGoodbye!")
 
 
 if __name__ == "__main__":

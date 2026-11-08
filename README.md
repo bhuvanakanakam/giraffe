@@ -17,7 +17,17 @@ cd giraffe
 python demo.py
 ```
 
-`demo.py` builds a chores board and a referral board, claims and moves items, adds a comment, and shows two rejected operations caught as custom exceptions (`AlreadyClaimedError` for a double claim, `StageFullError` for a full "Accepted" column). It then saves each board to JSON (`chores_board.json`, `referral_board.json`), loads it back, and prints `loaded == original -> True`.
+Choose a mode when prompted:
+
+- **1. Interactive:** Choose **1** for the chores board or **2** for referrals. Then choose **1** to claim an item, **2** to move an item, or **3** to add a comment. Enter the requested item ID (such as `c1` or `r1`), user ID, destination stage, or comment. Available users and stages are printed when needed. Rule violations are displayed as rejected actions so you can keep trying.
+- **2. Existing demo:** Run the prepared story described below.
+- **0. Exit:** Close the program.
+
+In interactive mode, **0** returns from the action menu to board selection, and **0** at board selection returns to mode selection. Changes remain available while switching boards in the same interactive session. Interactive changes are held in memory and are not saved to JSON; starting interactive mode again creates fresh sample boards. You can also exit with Ctrl+C or end-of-input.
+
+For example, select mode `1`, board `1`, action `1`, item `c1`, and user `ayush` to claim the trash chore. Then select action `2`, item `c1`, and stage `In Progress` to move it.
+
+In existing demo mode, `demo.py` builds a chores board and a referral board, claims and moves items, adds a comment, and shows two rejected operations caught as custom exceptions (`AlreadyClaimedError` for a double claim, `StageFullError` for a full "Accepted" column). It then saves each board to JSON (`chores_board.json`, `referral_board.json`), loads it back, and prints `loaded == original -> True`.
 
 `python items.py` runs a smaller self-check of the item classes on their own.
 
@@ -28,7 +38,7 @@ python demo.py
 | `items.py` | `User`, `WorkflowStage` (dataclasses), `BoardItem` (ABC), `Task`, `Chore`, `ReferralRequest`, `item_from_dict()` | [items.md](Files/Concept_Maps/items.md) |
 | `errors.py` | The `GiraffeError` exception family | [errors.md](Files/Concept_Maps/errors.md) |
 | `board.py` | `Board` (owns the state and enforces the rules), `save()`, `load_board()` | [board.md](Files/Concept_Maps/board.md) |
-| `demo.py` | The runnable M1 story | [demo.md](Files/Concept_Maps/demo.md) |
+| `demo.py` | Mode selection, interactive board actions, and the runnable M1 story | [demo.md](Files/Concept_Maps/demo.md) |
 
 ## Concept map
 
@@ -87,7 +97,7 @@ Organized by the six required M1 concepts (R1 to R6) in the project guide, follo
 | Rejected operation 1: double claim | demo.py: 88-93 | Raises `AlreadyClaimedError`, caught by name and printed, then the owner is printed to show nothing changed. |
 | Rejected operation 2: full column | demo.py: 106-111 | Raises `StageFullError`, caught by name and printed, then the item's column is printed to show it stayed put. |
 | Save and load round trip | demo.py: 114-119 | `loaded == original -> True` for both boards, using `Board.__eq__`, proves nothing was lost, including column order and item history. |
-| Run instructions | README.md: "How to run"; demo.py: 126-127 | `python demo.py` runs the full story with no setup. The main guard means it only runs when started directly, not when imported. |
+| Run instructions | README.md: "How to run"; demo.py: 126-127 | `python demo.py` opens mode selection; choose 1 for interactive actions or 2 for the full story. The main guard means it only runs when started directly, not when imported. |
 
 ### Optional depth
 

@@ -1,5 +1,5 @@
 """
-board.py -Board state and rules for Giraffee.
+board.py - Board state and rules for Giraffe.
 
 Author:  Ayush Jain (ayushjain_01)
 Team:    404NotFound (Ayush Jain, Bhuvana Kanakam, Prithvi Sunilkumar)
@@ -7,10 +7,12 @@ Course:  95-895 Python Systems Fundamentals, Fall 2026, Mini 2
 Part of: M1 Domain Model
 
 What lives here:
-  - All custom errors needed for this project
+  - Board-owned state, validated operations, and defensive item snapshots
 
 AI Use: None for this file.
 """
+
+from copy import deepcopy
 
 from items import BoardItem, User, WorkflowStage
 from errors import InvalidBoardError, InvalidStageError, NotFoundError, DuplicateIDError, StageFullError, InvalidUserError, AlreadyClaimedError
@@ -40,6 +42,17 @@ class Board:
     def stages(self) -> tuple[WorkflowStage, ...]:
         return tuple(self._stages.values())
 
+    @property
+    def items(self) -> tuple[BoardItem, ...]:
+        """Returns detached snapshots, instead of board-owned mutable items."""
+        return tuple(deepcopy(item) for item in self._items.values())
+
+    def get_item(self, item_id: str) -> BoardItem:
+        """Returns a detached snapshot of the item's current state."""
+        if item_id not in self._items:
+            raise NotFoundError(f"Item {item_id!r} does not exist")
+        return deepcopy(self._items[item_id])
+
     def add_user(self, user: User)-> None:
         if not isinstance(user, User):
             raise InvalidUserError("Expected a User object")
@@ -57,6 +70,8 @@ class Board:
         self._users[user.user_id] = user
 
     def add_stage(self, stage: WorkflowStage) -> None:
+        if not isinstance(stage, WorkflowStage):
+            raise InvalidStageError("Expected a WorkflowStage object")
         if not isinstance(stage.name, str) or not stage.name.strip():
             raise InvalidStageError("Stage name cannot be empty")
 
@@ -75,6 +90,9 @@ class Board:
 
     def add_item(self, item: BoardItem) -> None:
         """Add a valid item without violating board rules."""
+        if not isinstance(item, BoardItem):
+            raise InvalidBoardError("Expected a BoardItem object")
+        item = deepcopy(item)
         item.validate()
 
         if item.item_id in self._items:
@@ -103,6 +121,7 @@ class Board:
                 f"Stage {stage.name!r} has reached its limit"
             )
 
+        # Maintain's a local object so the caller cannot bypass board rules.
         self._items[item.item_id] = item
 
     def claim(self, item_id: str, user_id: str) -> None:

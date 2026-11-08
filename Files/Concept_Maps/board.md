@@ -10,14 +10,14 @@
 
 | Concept | File: lines | Why it is needed here |
 |---|---|---|
-| Composition | board.py: 23-29 | Board owns dictionaries of members, stages, and items, making it the future home of shared server state. |
-| Properties and collection snapshots | board.py: 31-41 | Callers can read the board name and receive tuples of frozen users and stages without modifying the board collections. |
-| Validated admission | board.py: 43-106 | Users, stages, and items are checked before insertion; duplicate identifiers and invalid relationships are rejected. |
-| Polymorphism | board.py: 78, 192 | Board calls validate() and describe() through the BoardItem interface without branching on concrete item type. |
-| Custom exceptions | board.py: 43-170, 196-240 | Domain failures explain invalid membership, duplicate IDs, ownership conflicts, and capacity violations. |
-| Controlled ownership changes | board.py: 108-127 | claim() checks membership and existing ownership before recording a new owner. |
-| Capacity invariant | board.py: 95-104, 129-158 | Admission and movement count destination items before allowing a change; same-stage moves are harmless. |
-| Validate before mutation | board.py: 160-170, 205-240 | Invalid comments and edits are rejected before history or item fields change. |
-| Read-only presentation | board.py: 172-194 | describe() groups items by stage and returns text without changing state. |
-| Collection removal | board.py: 196-203 | Deleting an existing item frees capacity; missing items raise a domain exception. |
-| Type hints | Throughout | Annotations describe the expected domain objects, identifiers, and return values. |
+| Composition | board.py: 25-31 | Board owns members, stages, and items as the future shared state. |
+| Read-only properties | board.py: 34-35; board.py: 38-39; board.py: 42-43 | The name is read-only; user and stage collections are tuples containing frozen dataclasses. |
+| Defensive copies and ownership | board.py: 91-125; board.py: 46-48; board.py: 50-54 | Copy on admission and copy on retrieval prevent external references from changing board-owned items, including nested history. |
+| Validated admission | board.py: 56-70; board.py: 72-89; board.py: 91-125 | Validate data, uniqueness, membership, and capacity before inserting. |
+| Polymorphism | board.py: 91-125; board.py: 191-213 | Call validate() and describe() through BoardItem without branching on concrete subclass. |
+| Ownership invariant | board.py: 127-146 | Reject a second claim before updating owner or history. |
+| Capacity invariant | board.py: 148-177 | Count destination items before moving; same-stage moves change nothing. |
+| Validate before mutation | board.py: 179-189; board.py: 224-259 | Check all supplied fields before changing text or history. |
+| Collection removal | board.py: 215-222 | Reject missing IDs; removal frees stage capacity. |
+| Read-only presentation | board.py: 191-213 | Return a grouped text summary without changing state. |
+| Custom exceptions and type hints | Throughout | Explain domain rejections and document operation contracts. |

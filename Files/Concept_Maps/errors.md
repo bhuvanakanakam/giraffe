@@ -17,7 +17,7 @@ Line numbers match the version of `errors.py` submitted with M1.
 | Concept | Where (file: lines) | Why it is needed here |
 |---|---|---|
 | R4 · Custom exception classes | errors.py: 15-40 | Giraffe has several different ways to refuse an operation (item already claimed, column full, unknown user). A separate class for each one means the caller can tell them apart by name instead of reading a `False` or parsing a message. |
-| R4 · Exception family through inheritance | errors.py: 15-40 | Every error inherits from `GiraffeError`, so a caller can catch any Giraffe rule violation with one `except GiraffeError` (the M2 server will need this to turn any rule violation into an error response), while `demo.py` catches the specific ones by name. |
+| R4 · Exception family through inheritance | errors.py: 15-40 | Every error inherits from `GiraffeError`, so a caller can catch any Giraffe rule violation with one `except GiraffeError`. Interactive mode in `demo.py` (line 158) does exactly this to print any rejection and keep going, and the M2 server will do the same to send error responses. The scripted story catches the specific errors by name (lines 91, 109). |
 | R4 · Grouped board setup errors | errors.py: 21-28 | `InvalidUserError` and `InvalidStageError` are children of `InvalidBoardError` because both mean the board was configured wrongly, so they can be handled together. |
 | R4 · One error per invariant | errors.py: 36-40 | `AlreadyClaimedError` protects our one-owner rule and `StageFullError` protects our column limits (like the 2 referral slots in the demo). They are the two rules M3 has to keep true under concurrency. |
 
@@ -57,13 +57,13 @@ A `False` can be ignored by accident and never says why. An exception can't be s
 |---|---|
 | `items.py` (Bhuvana) | raises `InvalidItemError` |
 | `board.py` (Ayush, Prithvi) | raises every other error |
-| `demo.py` (Prithvi) | catches `AlreadyClaimedError` (line 91) and `StageFullError` (line 109) |
+| `demo.py` (Prithvi, Ayush) | the story catches `AlreadyClaimedError` (line 91) and `StageFullError` (line 109); interactive mode catches the whole family with `except GiraffeError` (line 158) |
 
 ---
 
 ## Check-in talking points
 
 1. **Why custom exceptions?** Each one names the rule that was broken, so callers can react differently to "full" and "already claimed".
-2. **Why a common parent?** One `except GiraffeError` catches every rule violation, which the M2 server will use to send back an error response.
+2. **Why a common parent?** One `except GiraffeError` catches every rule violation. Interactive mode uses it on demo.py line 158, and the M2 server will use it to send back an error response.
 3. **Why are user and stage errors under `InvalidBoardError`?** Both mean the board was set up wrongly.
 4. **Which errors guard our invariants?** `AlreadyClaimedError` (one owner) and `StageFullError` (column limits).

@@ -160,14 +160,15 @@ classDiagram
 
 ## Who built what
 
-| Part | Built by |
-|---|---|
-| `items.py`: `User`, `WorkflowStage`, `BoardItem` ABC, `Task`, `Chore`, `ReferralRequest`, `item_from_dict` | Bhuvana Kanakam |
-| `errors.py`: the `GiraffeError` exception family | Ayush Jain |
-| `board.py`: `Board` rules (add, claim, move, comment, edit, delete, describe, `__repr__`, `__eq__`) | Ayush Jain |
-| `board.py`: `Board.save()` and `load_board()` | Prithvi Sunilkumar |
-| `demo.py` | Prithvi Sunilkumar |
-| Concept maps | Each person wrote the map for their own code; Bhuvana set up the repo and README |
+| Part | Built by | AI assistance |
+|---|---|---|
+| `items.py`: `User`, `WorkflowStage`, `BoardItem` ABC, `Task`, `Chore`, `ReferralRequest`, `item_from_dict` | Bhuvana Kanakam | Claude helped structure the file and its concept map |
+| `errors.py`: the `GiraffeError` exception family | Ayush Jain | None in the code; ChatGPT helped with the concept map |
+| `board.py`: `Board` rules (add, claim, move, comment, edit, delete, describe, `__repr__`, `__eq__`) | Ayush Jain | None in the code; ChatGPT helped with the concept map |
+| `board.py`: `Board.save()` and `load_board()` | Prithvi Sunilkumar | Claude helped draft the code and concept map |
+| `demo.py` | Prithvi Sunilkumar | Claude helped draft the code and concept map |
+| Repo setup, README, concept map consistency | Bhuvana Kanakam | Claude helped align the maps with the project guide |
+| Concept maps | Each person wrote the map for their own code | As listed above |
 
 ## AI use
 

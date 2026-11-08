@@ -22,7 +22,7 @@ class Board:
     Owns a board's members, stages and items.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         if not isinstance(name, str) or not name.strip():
             raise InvalidBoardError("Board name must be a non-empty string.")
         self._name = name.strip()
@@ -53,7 +53,7 @@ class Board:
             raise NotFoundError(f"Item {item_id!r} does not exist")
         return deepcopy(self._items[item_id])
 
-    def add_user(self, user: User)-> None:
+    def add_user(self, user: User) -> None:
         if not isinstance(user, User):
             raise InvalidUserError("Expected a User object")
 
@@ -257,3 +257,20 @@ class Board:
 
         if title is not None or description is not None:
             item.add_note("Item text updated")
+    def __repr__(self) -> str:
+        """Return a compact diagnostic summary."""
+        return (
+            f"Board({self.name!r}, users={len(self._users)}, "
+            f"stages={len(self._stages)}, items={len(self._items)})"
+        )
+
+    def __eq__(self, other: object) -> bool:
+        """Compare domain state, including workflow order and item history."""
+        if not isinstance(other, Board):
+            return NotImplemented
+        return (
+            self.name == other.name
+            and self._users == other._users
+            and tuple(self._stages.items()) == tuple(other._stages.items())
+            and self._items == other._items
+        )

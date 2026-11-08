@@ -8,13 +8,18 @@ Part of: M1 Domain Model
 
 What lives here:
   - Board-owned state, validated operations, and defensive item snapshots
+    (Ayush Jain)
+  - Persistence: Board.save() and load_board() (Prithvi Sunilkumar)
 
-AI Use: None for this file.
+AI Use: None for the board rules (Ayush). Persistence section (Prithvi):
+I used Claude to help draft save/load and its error handling. I reviewed
+and tested every line and can explain all of it. Cited in the README.
 """
-
+from __future__ import annotations  # lets str | None hints work on Python 3.9
+import json
 from copy import deepcopy
 
-from items import BoardItem, User, WorkflowStage
+from items import BoardItem, User, WorkflowStage, item_from_dict
 from errors import InvalidBoardError, InvalidStageError, NotFoundError, DuplicateIDError, StageFullError, InvalidUserError, AlreadyClaimedError
 
 class Board:
@@ -274,3 +279,84 @@ class Board:
             and tuple(self._stages.items()) == tuple(other._stages.items())
             and self._items == other._items
         )
+
+    # -----------------------------------------------------------------------
+    # Persistence (Author: Prithvi Sunilkumar)
+    # -----------------------------------------------------------------------
+
+    def save(self, path: str) -> None:
+        """Write the whole board to a JSON file.
+
+        Stages are saved as a list so their order (the workflow order)
+        survives. Each item's to_dict() includes its "kind", which is how
+        load_board() knows which class to rebuild.
+        """
+        data = {
+            "name": self._name,
+            "users": [user.to_dict() for user in self._users.values()],
+            "stages": [stage.to_dict() for stage in self._stages.values()],
+            "items": [item.to_dict() for item in self._items.values()],
+        }
+
+        # Build the full JSON text first, so a serialization error cannot
+        # leave a half-written file behind.
+        text = json.dumps(data, indent=2)
+
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+        except OSError as e:
+            raise InvalidBoardError(f"Could not save board to {path!r}: {e}") from e
+
+
+# ---------------------------------------------------------------------------
+# Persistence (Author: Prithvi Sunilkumar)
+# load_board() rebuilds a Board only through its public methods, so every
+# rule (valid users, stage limits, owners must be members) runs again on
+# loaded data, and nothing outside Board touches _items.
+# ---------------------------------------------------------------------------
+
+def load_board(path: str) -> Board:
+    """Read a board saved by Board.save() and rebuild it.
+
+    Raises InvalidBoardError if the file is missing, is not valid JSON,
+    or does not have the expected shape. Rule violations in the data
+    (e.g. a duplicate ID or an over-full stage) raise the same custom
+    errors the Board methods raise.
+    """
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except OSError as e:
+        raise InvalidBoardError(f"Could not read board file {path!r}: {e}") from e
+    except json.JSONDecodeError as e:
+        raise InvalidBoardError(f"Board file {path!r} is not valid JSON: {e}") from e
+
+    if not isinstance(data, dict):
+        raise InvalidBoardError("Board file must contain a JSON object")
+
+    missing = [key for key in ("name", "users", "stages", "items") if key not in data]
+    if missing:
+        raise InvalidBoardError(f"Board file is missing keys: {missing}")
+
+    for key in ("users", "stages", "items"):
+        if not isinstance(data[key], list):
+            raise InvalidBoardError(f"{key!r} must be a list")
+
+    board = Board(data["name"])
+
+    try:
+        # Order matters: users and stages must exist before any item,
+        # because add_item checks that the item's stage and owner exist.
+        for user_data in data["users"]:
+            board.add_user(User.from_dict(user_data))
+        for stage_data in data["stages"]:
+            board.add_stage(WorkflowStage.from_dict(stage_data))
+        for item_data in data["items"]:
+            board.add_item(item_from_dict(item_data))
+    except (TypeError, AttributeError) as e:
+        # from_dict(**data) raises TypeError on missing/extra fields, and
+        # AttributeError if an entry is not a dict at all.
+        raise InvalidBoardError(f"Board file has a malformed entry: {e}") from e
+
+    return board

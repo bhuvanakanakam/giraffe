@@ -31,3 +31,49 @@ Each code file has its own concept map here, written by the person who built tha
 - Line numbers change whenever a file is edited. Recheck every row after the final merge.
 - Copy the summary rows into the concept map in the main README, since graders score against that one.
 - Every "why" should say why the concept fits *our* project, not just what the concept is. That is the difference between scoring Correct (2) and Justified (3).
+
+## Class diagram
+
+```mermaid
+classDiagram
+    class Board {
+        +name: str
+        +users: tuple
+        +stages: tuple
+        +items: tuple
+        +add_item(item) None
+        +get_item(item_id) BoardItem
+        +claim(item_id, user_id) None
+        +move(item_id, stage_name) None
+        +edit_item(item_id, title, description) None
+        +delete_item(item_id) None
+        +add_comment(item_id, text) None
+        +describe() str
+        +__repr__() str
+        +__eq__(other) bool
+    }
+    class BoardItem {
+        <<abstract>>
+        +validate() None
+        +describe() str
+        +details() dict
+    }
+    class User {
+        <<dataclass>>
+        +user_id: str
+        +name: str
+    }
+    class WorkflowStage {
+        <<dataclass>>
+        +name: str
+        +limit: int or None
+    }
+    Board "1" *-- "0..*" BoardItem : owns copies
+    Board "1" *-- "0..*" User : members
+    Board "1" *-- "0..*" WorkflowStage : ordered stages
+    BoardItem <|-- Task
+    BoardItem <|-- Chore
+    BoardItem <|-- ReferralRequest
+```
+
+Board properties support inspection without exposing mutable board-owned items. Its repr shows a compact summary; equality compares domain state, including stage order and item history. Board methods have parameter and return type hints. The existing item model also provides properties, repr, equality, and type annotations.

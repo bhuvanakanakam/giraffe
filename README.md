@@ -177,7 +177,8 @@ classDiagram
 | `errors.py`: the `GiraffeError` exception family | Ayush Jain | None in the code; ChatGPT helped with the concept map |
 | `board.py`: `Board` rules (add, claim, move, comment, edit, delete, describe, `__repr__`, `__eq__`) | Ayush Jain | None in the code; ChatGPT helped with the concept map |
 | `board.py`: `Board.save()` and `load_board()` | Prithvi Sunilkumar | Claude helped draft the code and concept map |
-| `demo.py` | Prithvi Sunilkumar | Claude helped draft the code and concept map |
+| `demo.py`: scripted story (`run_demo`) | Prithvi Sunilkumar | Claude helped draft the code and concept map |
+| `demo.py`: interactive mode and mode menu (`run_interactive`, `main`) | Ayush Jain | ChatGPT helped with the code |
 | Repo setup, README, concept map consistency | Bhuvana Kanakam | Claude helped align the maps with the project guide |
 | Concept maps | Each person wrote the map for their own code | As listed above |
 
@@ -185,6 +186,7 @@ classDiagram
 
 - **items.py and items.md (Bhuvana):** Claude helped structure the file and write the concept map. Reviewed, tested and explainable by the author.
 - **errors.py and board.py rules (Ayush):** No AI in the code. ChatGPT helped prepare the concept maps from the source.
+- **demo.py interactive mode and mode menu (Ayush):** ChatGPT helped with the code. Reviewed, tested and explainable by the author.
 - **board.py save/load, demo.py and demo.md (Prithvi):** Claude helped draft the code and documentation. Reviewed, run end to end, and explainable by the author.
 - **README and concept map consistency (Bhuvana):** Claude helped align all four concept maps and this README with the project guide's required concepts and checked every line reference against the code.
 

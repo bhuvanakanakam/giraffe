@@ -4,7 +4,7 @@
 **Team:** 404NotFound
 **Milestone:** M1 Domain Model
 **File:** `demo.py` (185 lines; interactive mode on lines 126-159 and the mode menu on lines 162-182 by Ayush Jain)
-**AI assistance:** Claude helped draft `demo.py` and this concept map. I reviewed and ran all of it and can explain every line.
+**AI assistance:** Story (Prithvi): Claude helped draft the code and this concept map. Interactive mode and mode menu (Ayush): ChatGPT helped with the code. Each author reviewed and ran their part and can explain every line.
 
 `demo.py` runs the whole M1 story with one command, `python demo.py`. It builds two different boards from the same `Board` class, uses them normally, shows two operations being rejected with our own exceptions, then saves both boards to JSON and loads them back.
 

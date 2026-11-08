@@ -4,9 +4,9 @@ Giraffe is a customizable board system for organizing software sprints, shared h
 
 For M1, Giraffe runs locally as plain Python objects with no networking. Tasks, chores and referral requests share one abstract interface. Boards save to and load from JSON, and `demo.py` runs the whole story from the command line. In M2 the `Board` object becomes the server's shared state.
 
-**Team:** 404NotFound (Ayush Jain, Bhuvana Kanakam, Prithvi Sunilkumar)
-**Course:** 95-895 Python Systems Fundamentals, Fall 2026, Mini 2
-**Milestone:** M1 Domain Model
+- **Team:** 404NotFound (Ayush Jain, Bhuvana Kanakam, Prithvi Sunilkumar)
+- **Course:** 95-895 Python Systems Fundamentals, Fall 2026, Mini 2
+- **Milestone:** M1 Domain Model
 
 ## How to run
 

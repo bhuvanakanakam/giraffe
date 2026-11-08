@@ -97,7 +97,8 @@ Organized by the six required M1 concepts (R1 to R6) in the project guide, follo
 | Rejected operation 1: double claim | demo.py: 88-93 | Raises `AlreadyClaimedError`, caught by name and printed, then the owner is printed to show nothing changed. |
 | Rejected operation 2: full column | demo.py: 106-111 | Raises `StageFullError`, caught by name and printed, then the item's column is printed to show it stayed put. |
 | Save and load round trip | demo.py: 114-119 | `loaded == original -> True` for both boards, using `Board.__eq__`, proves nothing was lost, including column order and item history. |
-| Run instructions | README.md: "How to run"; demo.py: 126-127 | `python demo.py` opens mode selection; choose 1 for interactive actions or 2 for the full story. The main guard means it only runs when started directly, not when imported. |
+| Interactive mode (Ayush) | demo.py: 126-159 | Lets the user claim, move and comment on either sample board. `except GiraffeError` (line 158) catches every custom error through the shared base class, so any broken rule is printed as "Rejected" and the user can keep trying. |
+| Run instructions | README.md: "How to run"; demo.py: 162-185 | `python demo.py` opens mode selection; choose 1 for interactive actions or 2 for the full story. The main guard means it only runs when started directly, not when imported. |
 
 ### Optional depth
 

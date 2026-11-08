@@ -3,7 +3,7 @@
 **Author:** Prithvi Sunilkumar
 **Team:** 404NotFound
 **Milestone:** M1 Domain Model
-**File:** `demo.py` (127 lines)
+**File:** `demo.py` (185 lines; interactive mode on lines 126-181 by Ayush Jain)
 **AI assistance:** Claude helped draft `demo.py` and this concept map. I reviewed and ran all of it and can explain every line.
 
 `demo.py` runs the whole M1 story with one command, `python demo.py`. It builds two different boards from the same `Board` class, uses them normally, shows two operations being rejected with our own exceptions, then saves both boards to JSON and loads them back.
@@ -23,7 +23,8 @@ Line numbers match the version of `demo.py` submitted with M1.
 | R6 · Rejected operation 2: full column | demo.py: 106-111 | "Accepted" has a limit of 2 (line 60) because the company gives two referral slots. Moving a third request in raises `StageFullError`, and the demo prints the item's column to show it stayed put. |
 | R5 · Save and load round trip | demo.py: 114-119 | Each board is saved with `board.save()` and rebuilt with `load_board()`. `loaded == original` uses `Board.__eq__` to prove nothing was lost, including column order and item history. |
 | R2 · Polymorphism, no type checks | demo.py: 121-123 | The same `item.describe()` call prints every loaded item. The loop never checks whether it has a `Chore` or a `ReferralRequest`. |
-| R6 · Runnable from the README | demo.py: 126-127 | The story runs with `python demo.py` exactly as the README says, and only when the file is run directly, not when imported. |
+| R6 · Interactive mode (Ayush) | demo.py: 126-159 | Lets the user claim, move and comment on either sample board. `except GiraffeError` (line 158) catches every custom error through the shared base class, so any broken rule is printed as "Rejected" and the user can keep trying. |
+| R6 · Runnable from the README | demo.py: 162-185 | `python demo.py` opens a mode menu: 1 for interactive, 2 for the prepared story. `EOFError` and Ctrl+C exit cleanly, and the main guard means it only runs when started directly, not when imported. |
 
 ---
 
@@ -89,7 +90,7 @@ Loaded items print as the right class because each item's `"kind"` was saved, an
 |---|---|
 | `board.py` (Ayush, Prithvi) | `Board`, `add_user`, `add_stage`, `add_item`, `claim`, `move`, `add_comment`, `describe`, `get_item`, `items`, `save`, `load_board`, `==` |
 | `items.py` (Bhuvana) | `User`, `WorkflowStage`, `Chore`, `ReferralRequest`, `describe()` |
-| `errors.py` (Ayush) | `AlreadyClaimedError`, `StageFullError` |
+| `errors.py` (Ayush) | `AlreadyClaimedError`, `StageFullError`, `GiraffeError` (interactive mode) |
 
 Nothing imports `demo.py`. It is the entry point.
 

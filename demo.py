@@ -1,7 +1,7 @@
 """
-demo.py - Runs the Giraffe M1 story end to end.
+demo.py - Runs the Giraffe M1 story, or lets you try the boards yourself.
 
-Author:  Prithvi Sunilkumar
+Author:  Prithvi Sunilkumar (story), Ayush Jain (interactive mode)
 Team:    404NotFound (Ayush Jain, Bhuvana Kanakam, Prithvi Sunilkumar)
 Course:  95-895 Python Systems Fundamentals, Fall 2026, Mini 2
 Part of: M1 Domain Model

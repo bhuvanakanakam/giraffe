@@ -155,3 +155,9 @@ Combined from the per-file maps in [Files/Concept_Maps/](Files/Concept_Maps/). E
 - **items.py and items.md (Bhuvana):** Claude helped structure the file and write the concept map. Reviewed, tested and explainable by the author.
 - **errors.py and board.py rules (Ayush):** No AI in the code. ChatGPT helped prepare the concept maps from the source.
 - **board.py save/load, demo.py, demo.md, and the README run instructions and combined table (Prithvi):** Claude (Anthropic) helped draft the code and documentation. Reviewed, run end to end, and explainable by the author.
+
+## Web UI (extra, not part of M1)
+
+Live at https://giraffe-boards.netlify.app/ (source: `docs/index.html`).
+
+This is an optional browser front end built on top of the M1 design. It re-implements the same rules from `board.py`, `items.py` and `errors.py` in JavaScript (one owner per item, stage limits, validation before any change, the same error names) and can export and import the same JSON that `Board.save()` and `load_board()` use. It is not connected to the Python code and is not one of the M1 concepts graded above. AI use: built with Claude (Anthropic) and reviewed by Bhuvana Kanakam.

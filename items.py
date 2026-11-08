@@ -145,9 +145,9 @@ class BoardItem(ABC):
 
     def _check_common(self) -> None:
         # every kind of item needs an id and a title, so check those once here
-        if not self.item_id or not self.item_id.strip():
+        if not isinstance(self.item_id, str) or not self.item_id.strip():
             raise InvalidItemError("item_id cannot be empty")
-        if not self.title or not self.title.strip():
+        if not isinstance(self.title, str) or not self.title.strip():
             raise InvalidItemError(f"item {self.item_id} needs a title")
 
     def _owner_text(self) -> str:
@@ -202,7 +202,7 @@ class Task(BoardItem):
     def validate(self) -> None:
         self._check_common()
         # points have to be a positive whole number, so 0, -2 or 1.5 fail
-        if not isinstance(self.points, int) or self.points <= 0:
+        if type(self.points) is not int or self.points <= 0:
             raise InvalidItemError(
                 f"task {self.item_id} needs a positive whole number of points")
 
@@ -258,10 +258,10 @@ class ReferralRequest(BoardItem):
 
     def validate(self) -> None:
         self._check_common()
-        if not self.company or not self.company.strip():
+        if not isinstance(self.company, str) or not self.company.strip():
             raise InvalidItemError(
                 f"referral {self.item_id} needs a company")
-        if not self.applicant or not self.applicant.strip():
+        if not isinstance(self.applicant, str) or not self.applicant.strip():
             raise InvalidItemError(
                 f"referral {self.item_id} needs an applicant")
 

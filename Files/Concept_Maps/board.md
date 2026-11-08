@@ -1,56 +1,72 @@
 # Concept map: board.py
 
-**Author:** Ayush Jain  
-**Team:** 404NotFound  
-**Milestone:** M1 Domain Model  
-**File:** board.py  
-**AI assistance:** ChatGPT helped prepare this concept map from the current source.
+**Authors:** Ayush Jain (ayushjain_01): board rules, lines 1-281. Prithvi Sunilkumar: persistence, lines 283-362.
+**Team:** 404NotFound
+**Milestone:** M1 Domain Model
+**File:** `board.py` (362 lines)
+**AI assistance:** Board rules: no AI in the code; ChatGPT helped prepare this map. Persistence: Claude helped draft `save()`, `load_board()` and their map rows. Claude helped align the format with the other maps. Both authors reviewed and can explain every line.
 
-## Summary table
+`Board` is the class that owns everything on one board: its members, its columns (stages) and its items. Every change goes through a Board method that checks the rules first. In M2 this object becomes the server's shared state.
 
-| Concept | File: lines | Why it is needed here |
-|---|---|---|
-| Composition | board.py: 30-36 | Board owns members, stages, and items as the future shared state. |
-| Read-only properties | board.py: 39-40; board.py: 43-44; board.py: 47-48 | The name is read-only; user and stage collections are tuples containing frozen dataclasses. |
-| Defensive copies and ownership | board.py: 96-130; board.py: 51-53; board.py: 55-59 | Copy on admission and copy on retrieval prevent external references from changing board-owned items, including nested history. |
-| Validated admission | board.py: 61-75; board.py: 77-94; board.py: 96-130 | Validate data, uniqueness, membership, and capacity before inserting. |
-| Polymorphism | board.py: 96-130; board.py: 196-218 | Call validate() and describe() through BoardItem without branching on concrete subclass. |
-| Ownership invariant | board.py: 132-151 | Reject a second claim before updating owner or history. |
-| Capacity invariant | board.py: 153-182 | Count destination items before moving; same-stage moves change nothing. |
-| Validate before mutation | board.py: 184-194; board.py: 229-264 | Check all supplied fields before changing text or history. |
-| Collection removal | board.py: 220-227 | Reject missing IDs; removal frees stage capacity. |
-| Read-only presentation | board.py: 196-218 | Return a grouped text summary without changing state. |
-| Custom exceptions and type hints | Throughout | Explain domain rejections and document operation contracts. |
-| JSON save (Prithvi) | board.py: 287-309 | `save()` writes the name, users, stages and items to JSON. Stages go in a list so the workflow order survives, and each item's `to_dict()` includes its `"kind"` so the right class can be rebuilt. |
-| Load through public methods (Prithvi) | board.py: 319-362 (rebuild on 348-356) | `load_board()` rebuilds the board with `add_user`, `add_stage` and `add_item`, so every rule runs again on loaded data and nothing outside Board touches `_items`. Stages load before items because `add_item` checks the stage exists. |
-| No if/elif on kind when loading (Prithvi) | board.py: 356 | Each item goes through `item_from_dict()`, which uses the `ITEM_KINDS` lookup, so load works for any kind without type checks. |
-| Custom exceptions for bad files (Prithvi) | board.py: 305-309, 327-346, 357-360 | A missing file, broken JSON or the wrong shape raises `InvalidBoardError` instead of a raw `OSError`/`KeyError`/`TypeError`, so callers only need to catch Giraffe errors. `raise ... from e` keeps the original cause for debugging. |
-| Fail before writing (Prithvi) | board.py: 303 | The JSON text is built in full before the file is opened, so a serialization error can't leave a half-written file. |
+Line numbers match the version of `board.py` submitted with M1.
 
 ---
 
-## Save and load in detail (Prithvi Sunilkumar)
+## Summary table
 
-**AI assistance:** I used Claude to help draft `save()`, `load_board()` and this section. I reviewed and tested all of it and can explain every line.
+| Concept | Where (file: lines) | Why it is needed here |
+|---|---|---|
+| R1 · Class for the domain's owner | board.py: 25-281 | A board has rules that involve many objects at once (is this column full? is this user a member?), so it is a regular class with methods, not a dataclass. |
+| R2 · Polymorphism, no type checks | board.py: 101, 216, 298 | Board calls `item.validate()`, `item.describe()` and `item.to_dict()` on any item. It never asks whether it holds a Task, Chore or ReferralRequest, so a new kind of item needs no change here. |
+| R3 · Composition | board.py: 30-36 | Board owns three collections: members (`_users`), columns (`_stages`) and items (`_items`). It is the single owner of the state that M2 moves onto the server and M3 protects with a lock. |
+| R4 · Invariant: one owner per item | board.py: 132-151 | `claim()` checks the item exists, the user is a member, and the item is unclaimed (line 146) before it calls `set_owner()` (line 151). A second claim raises `AlreadyClaimedError` and changes nothing. |
+| R4 · Invariant: column limits | board.py: 118-127, 153-182 | `add_item()` and `move()` count the items already in the target column and raise `StageFullError` before anything changes. This is what keeps the 2-slot "Accepted" column at 2. |
+| R4 · Validated setup | board.py: 61-94 | `add_user()` and `add_stage()` reject empty IDs, negative limits and duplicates, so a board can't start in a broken state. |
+| R4 · Other changes go through methods | board.py: 184-194, 220-227, 229-264 | Comments, deletes and edits each have one method that validates every input first and only then changes the item. |
+| R4 · Defensive copies | board.py: 51-53, 55-59, 100 | Items are copied on the way in and on the way out, so code outside Board can never hold a reference to a board-owned item and change it behind Board's back. |
+| R5 · Save to JSON | board.py: 287-309 | `save()` asks each object for its own dict, keeps columns as a list so the workflow order survives, and builds the full JSON text (line 303) before opening the file so a failure can't leave a half-written file. |
+| R5 · Load through public methods | board.py: 319-362 | `load_board()` rebuilds the board with `add_user`, `add_stage` and `add_item` (lines 348-356), so loaded data passes the same rule checks as new data. Users and columns load first because `add_item` checks they exist. |
+| R5 · Bad files raise custom errors | board.py: 305-309, 327-344, 357-360 | A missing file, broken JSON or a wrong shape raises `InvalidBoardError` instead of a raw `OSError` or `KeyError`, and `from e` keeps the original cause for debugging. |
 
-### Saving (board.py: 287-309)
+## Optional depth
+
+| Concept | Where (file: lines) | Why it is needed here |
+|---|---|---|
+| Read-only properties | board.py: 38-53 | Callers can read `name`, `users`, `stages` and `items`, but can't assign to them. Users and stages come back as tuples of frozen dataclasses; items come back as copies. |
+| Dunder methods | board.py: 265-281 | `__repr__` gives a one-line summary for debugging. `__eq__` compares name, members, column order and every item including history, which is how `demo.py` proves a save and load loses nothing. |
+| Type hints | board.py: throughout | Every method states what it takes and returns, which makes the contract with `items.py` and `demo.py` clear. |
+
+---
+
+## Each concept in detail
+
+### 1. Board owns the state (lines 30-36)
 
 ```python
-data = {
-    "name": self._name,
-    "users": [user.to_dict() for user in self._users.values()],
-    "stages": [stage.to_dict() for stage in self._stages.values()],
-    "items": [item.to_dict() for item in self._items.values()],
-}
-text = json.dumps(data, indent=2)
+self._users: dict[str, User] = {}
+self._stages: dict[str, WorkflowStage] = {}
+self._items: dict[str, BoardItem] = {}
 ```
 
-`save()` is a method on Board because only Board can see its private dictionaries. It asks each object for its own dict (`to_dict()`), so Board doesn't need to know what fields a `Chore` or a `ReferralRequest` has. That is polymorphism again: the same call on every item, and each kind adds its own fields.
+Dictionaries keyed by ID make lookups and duplicate checks one step. The underscore marks them as Board's own; nothing outside Board touches them.
 
-### Loading (board.py: 319-362)
+### 2. Check everything, then change (lines 132-182)
 
 ```python
-board = Board(data["name"])
+if item.is_claimed:
+    raise AlreadyClaimedError(...)
+item.set_owner(user_id)
+```
+
+Every rule is checked before the single line that changes state. If any check fails, the exception leaves the board exactly as it was. `demo.py` prints the owner and column right after each rejection to show this.
+
+### 3. Copies in and out (lines 51-59, 100)
+
+`add_item()` stores a deep copy of the item it is given, and `items` / `get_item()` hand back deep copies. Without this, a caller could keep the original item and call `set_owner()` on it directly, skipping the one-owner check.
+
+### 4. Save and load (lines 287-362, Prithvi)
+
+```python
 for user_data in data["users"]:
     board.add_user(User.from_dict(user_data))
 for stage_data in data["stages"]:
@@ -59,32 +75,31 @@ for item_data in data["items"]:
     board.add_item(item_from_dict(item_data))
 ```
 
-`load_board()` is a plain function, not a method, because there is no board yet when you start loading. It never writes to `_items` directly. Every user, stage and item goes back in through the same public methods a person would use, so a hand-edited JSON file can't create a board that breaks our rules (for example, three items in a stage with a limit of 2 raises `StageFullError`).
+`load_board()` is a function, not a method, because there is no board yet when loading starts. It never writes to `_items` directly, so a hand-edited JSON file with three items in a 2-slot column raises `StageFullError` instead of loading.
 
-The order matters: `add_item` checks that the item's stage exists and that its owner is a member, so users and stages have to be loaded first.
-
-### Errors (board.py: 305-309, 327-360)
-
-| Problem | What the caller sees |
+| Problem in the file | What the caller sees |
 |---|---|
-| File missing or unreadable | `InvalidBoardError` |
+| Missing or unreadable | `InvalidBoardError` |
 | Not valid JSON | `InvalidBoardError` |
-| Not an object, missing keys, or a section isn't a list | `InvalidBoardError` |
-| An entry with wrong fields or not a dict | `InvalidBoardError` (from `TypeError` / `AttributeError`) |
+| Wrong shape or a malformed entry | `InvalidBoardError` |
 | Unknown item kind | `InvalidItemError` (from `item_from_dict`) |
 | Data breaks a board rule | The same error the Board method raises, e.g. `StageFullError` |
 
-### Who uses save and load
+---
+
+## Which files use board.py
 
 | Used by | What they call |
 |---|---|
-| `demo.py` | `board.save(path)`, `load_board(path)`, then `loaded == original` |
-| `items.py` (relied on) | `to_dict()`, `from_dict()`, `item_from_dict()` |
+| `demo.py` (Prithvi) | `Board`, `add_user`, `add_stage`, `add_item`, `claim`, `move`, `add_comment`, `describe`, `get_item`, `items`, `save`, `load_board`, `==` |
+| `items.py` (relied on) | `validate()`, `describe()`, `to_dict()`, `set_owner()`, `set_stage()`, `add_note()`, `item_from_dict()` |
 
-### Check-in talking points
+---
 
-1. **Why load through the public methods?** So loaded data is checked by the same rules as new data, and nothing outside Board touches `_items`.
-2. **Why save `"kind"`?** JSON doesn't know our classes. `kind` tells `item_from_dict()` which class to rebuild, using a dict lookup instead of if/elif.
-3. **Why stages as a list?** Stage order is the workflow order, and a list keeps it. `Board.__eq__` compares stage order, so the round trip proves it survived.
-4. **Why wrap errors?** Callers only need to catch Giraffe errors; `from e` keeps the original cause.
-5. **How do we know it works?** `demo.py` prints `loaded == original -> True` for both boards.
+## Check-in talking points
+
+1. **What is the shared state?** Board's three dictionaries. In M2 one Board lives on the server.
+2. **What are the invariants?** One owner per item, and no column over its limit. `claim()` and `move()` check them before changing anything.
+3. **Why copy items in and out?** So no outside code can change a board-owned item without going through Board.
+4. **Why load through the public methods?** So loaded data is checked by the same rules as new data.
+5. **How do we know save and load lose nothing?** `demo.py` prints `loaded == original -> True`, using `Board.__eq__`.

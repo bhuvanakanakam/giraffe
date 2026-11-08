@@ -1,12 +1,12 @@
 # Giraffe
 
-Giraffe is a customizable board system for organizing software sprints, shared household chores, and referral requests. Members can define workflow stages, add and edit items, claim ownership, move items between stages, and add comments to an item's activity history. The board checks ownership and stage-capacity rules before applying changes.
+Giraffe is a customizable board system for organizing software sprints, shared household chores, and referral requests. Members define workflow columns (stages), add and edit items, claim ownership, move items between columns, and comment on items. The board checks its rules before applying any change: **each item has at most one owner, and no column ever holds more items than its limit.**
 
-For M1, Giraffe runs locally as plain Python objects with no networking. Tasks, chores, and referral requests share a common interface, alongside users and configurable workflow stages. Boards save to and load from JSON files, and `demo.py` runs the whole story from the command line. A shared server comes in M2.
+For M1, Giraffe runs locally as plain Python objects with no networking. Tasks, chores and referral requests share one abstract interface. Boards save to and load from JSON, and `demo.py` runs the whole story from the command line. In M2 the `Board` object becomes the server's shared state.
 
 **Team:** 404NotFound (Ayush Jain, Bhuvana Kanakam, Prithvi Sunilkumar)
-**Course:** 95-895 Python Systems Fundamentals, Fall 2026
-**Folder started by:** Bhuvana Kanakam (bkanakam)
+**Course:** 95-895 Python Systems Fundamentals, Fall 2026, Mini 2
+**Milestone:** M1 Domain Model
 
 ## How to run
 
@@ -17,31 +17,86 @@ cd giraffe
 python demo.py
 ```
 
-`demo.py` builds a chores board and a referral board, claims and moves items, adds a comment, and shows two rejected actions caught as custom exceptions (`AlreadyClaimedError` for a double claim, `StageFullError` for a full "Accepted" stage). It then saves each board to JSON (`chores_board.json`, `referral_board.json`), loads it back, and prints `loaded == original -> True`. Running `python items.py` on its own runs a smaller self-check of the item classes.
+`demo.py` builds a chores board and a referral board, claims and moves items, adds a comment, and shows two rejected operations caught as custom exceptions (`AlreadyClaimedError` for a double claim, `StageFullError` for a full "Accepted" column). It then saves each board to JSON (`chores_board.json`, `referral_board.json`), loads it back, and prints `loaded == original -> True`.
 
-Each code file has its own concept map here, written by the person who built that file. Each map lists every course concept in the file, the exact lines, and why we used it there. The combined table in the main README is built from these.
+`python items.py` runs a smaller self-check of the item classes on their own.
 
-| File | Concept map | Owner | Status |
-|---|---|---|---|
-| items.py | [items.md](Files/Concept_Maps/items.md) | Bhuvana Kanakam | Done |
-| errors.py | [errors.md](Files/Concept_Maps/errors.md) | Ayush Jain |  Done |
-| board.py (rules) | [board.md](Files/Concept_Maps/board.md) | Ayush Jain | Done |
-| board.py (save and load) | [board.md](Files/Concept_Maps/board.md) | Prithvi Sunilkumar | Done |
-| demo.py | [demo.md](Files/Concept_Maps/demo.md) | Prithvi Sunilkumar | Done |
+## Files
 
-## Format for each file
+| File | What it holds | Detailed concept map |
+|---|---|---|
+| `items.py` | `User`, `WorkflowStage` (dataclasses), `BoardItem` (ABC), `Task`, `Chore`, `ReferralRequest`, `item_from_dict()` | [items.md](Files/Concept_Maps/items.md) |
+| `errors.py` | The `GiraffeError` exception family | [errors.md](Files/Concept_Maps/errors.md) |
+| `board.py` | `Board` (owns the state and enforces the rules), `save()`, `load_board()` | [board.md](Files/Concept_Maps/board.md) |
+| `demo.py` | The runnable M1 story | [demo.md](Files/Concept_Maps/demo.md) |
 
-1. Header: author, milestone, file
-2. Summary table: Concept | File: lines | Why it is needed here
-3. Each concept in detail, with a short code snippet
-4. Which other files use this one
-5. Check-in talking points
+## Concept map
 
-## Before submitting
+Organized by the six required M1 concepts (R1 to R6) in the project guide, followed by optional depth. Each per-file map linked above has the same rows plus code snippets, which files use it, and check-in talking points.
 
-- Line numbers change whenever a file is edited. Recheck every row after the final merge.
-- Copy the summary rows into the concept map in the main README, since graders score against that one.
-- Every "why" should say why the concept fits *our* project, not just what the concept is. That is the difference between scoring Correct (2) and Justified (3).
+### R1. Classes and data classes
+
+| Concept | Where (file: lines) | Why it is needed here |
+|---|---|---|
+| Data classes | items.py: 35-50 (`WorkflowStage`), 53-64 (`User`) | A column is just a name and an optional limit, and a user is just an ID and a name. They hold facts with no rules, so `@dataclass` writes `__init__`, `__repr__` and `__eq__` for us. `frozen=True` stops anyone from quietly raising a column's limit after the board checked it. |
+| Regular classes for things with rules | items.py: 74-273; board.py: 25-281 | Items validate themselves and control how their owner and column change, and a board enforces rules across many objects at once, so these are regular classes with methods. |
+
+### R2. Abstract base class and polymorphism
+
+| Concept | Where (file: lines) | Why it is needed here |
+|---|---|---|
+| Abstract base class | items.py: 74-184 (abstract methods 132-142) | Every item must validate itself, describe itself and list its own fields for saving. `BoardItem(ABC)` declares `validate()`, `describe()` and `details()` with `@abstractmethod`, so Python refuses to create a plain `BoardItem` or a subclass that forgets one. |
+| Concrete subclasses | items.py: 193-214 (`Task`), 217-242 (`Chore`), 245-273 (`ReferralRequest`) | A task, a chore and a referral request each *is a* board item, and every parent method (owner, column, history) makes sense for all three. `super().__init__` (lines 199, 223, 255) reuses the shared setup. Each validates differently: points, a real due date, a company and applicant. |
+| Used through the base class, no type checks | board.py: 101, 216, 298; demo.py: 121-123; items.py: 311-313 | `Board` calls `item.validate()`, `item.describe()` and `item.to_dict()` on any item and never checks whether it holds a Task, Chore or ReferralRequest, so adding a new kind needs no change to `Board`. |
+| No if/elif on kind when loading | items.py: 282-295 | `ITEM_KINDS` maps each saved kind to its class and `item_from_dict()` looks it up, so adding a kind is one new dictionary line. |
+
+### R3. Composition
+
+| Concept | Where (file: lines) | Why it is needed here |
+|---|---|---|
+| Board owns the collections | board.py: 30-36 | `Board` owns the members (`_users`), columns (`_stages`) and items (`_items`). It is the single owner of the state that M2 moves onto the server and M3 protects with a lock. |
+| One owner class, many board types | demo.py: 30-49, 52-73 | The chores board and the referral board are both `Board` objects with different members, columns and limits, which shows the design is configurable. |
+
+### R4. Encapsulated state changes and custom exceptions
+
+| Concept | Where (file: lines) | Why it is needed here |
+|---|---|---|
+| Invariant: one owner per item | board.py: 132-151 | `claim()` checks the item exists, the user is a member and the item is unclaimed (line 146) before calling `set_owner()` (line 151). A second claim raises `AlreadyClaimedError` and changes nothing. |
+| Invariant: column limits | board.py: 118-127 (`add_item`), 153-182 (`move`) | Both methods count the items already in the target column and raise `StageFullError` before anything changes. This is what keeps the 2-slot "Accepted" column at 2. |
+| Validated setup | board.py: 61-94 | `add_user()` and `add_stage()` reject empty IDs, negative limits and duplicates, so a board can't start in a broken state. |
+| Other changes go through methods | board.py: 184-194, 220-227, 229-264 | Comments, deletes and edits each have one method that validates every input first and only then changes the item. |
+| Item state changes only through methods | items.py: 98-127 | `owner`, `stage` and `history` are read-only properties. Only `set_owner()` and `set_stage()` change them, `Board` calls those after its checks pass, and each change is logged to the item's history. |
+| Defensive copies | board.py: 51-53, 55-59, 100; items.py: 93, 106-109 | Items are copied into and out of `Board`, and history is copied into and out of each item, so outside code can never change board-owned state without going through a method. |
+| Custom exception family | errors.py: 15-40 | Each way Giraffe refuses an operation has its own class, so callers can tell "full" from "already claimed" by name. All inherit from `GiraffeError`, so one `except GiraffeError` catches any rule violation, which the M2 server will use to send error responses. |
+| Raise before changing anything | items.py: 146-151, 202-207, 227-235, 259-266; board.py: 146-151, 177-182 | Every check runs before the single line that changes state, so a rejected operation leaves the board exactly as it was. `demo.py` prints the state after each rejection to prove it. |
+
+### R5. File persistence
+
+| Concept | Where (file: lines) | Why it is needed here |
+|---|---|---|
+| Save to JSON | board.py: 287-309; items.py: 45-46, 59-60, 156-168 | Each object writes its own dict. Items always include `"kind"` because JSON has no idea which class an object came from. Columns are saved as a list so the workflow order survives. The full JSON text is built (line 303) before the file is opened, so a failure can't leave a half-written file. |
+| Load through the public methods | board.py: 319-362 (rebuild on 348-356) | `load_board()` rebuilds the board with `add_user`, `add_stage` and `add_item`, so loaded data passes the same rule checks as new data. A hand-edited file with three items in a 2-slot column raises `StageFullError` instead of loading. |
+| Rebuild the right subclass | items.py: 170-175, 282-295 | `item_from_dict()` picks the class from `"kind"` and `from_dict()` builds it, so a saved chore comes back as a `Chore`. An unknown kind raises `InvalidItemError`. |
+| Bad files raise custom errors | board.py: 305-309, 327-344, 357-360 | A missing file, broken JSON or a wrong shape raises `InvalidBoardError` instead of a raw `OSError` or `KeyError`, and `from e` keeps the original cause for debugging. |
+
+### R6. Runnable demo and README
+
+| Concept | Where (file: lines) | Why it is needed here |
+|---|---|---|
+| Normal operations | demo.py: 81-85, 99-103 | Claims, moves and a comment all go through `Board` methods, never by changing an item directly. |
+| Rejected operation 1: double claim | demo.py: 88-93 | Raises `AlreadyClaimedError`, caught by name and printed, then the owner is printed to show nothing changed. |
+| Rejected operation 2: full column | demo.py: 106-111 | Raises `StageFullError`, caught by name and printed, then the item's column is printed to show it stayed put. |
+| Save and load round trip | demo.py: 114-119 | `loaded == original -> True` for both boards, using `Board.__eq__`, proves nothing was lost, including column order and item history. |
+| Run instructions | README.md: "How to run"; demo.py: 126-127 | `python demo.py` runs the full story with no setup. The main guard means it only runs when started directly, not when imported. |
+
+### Optional depth
+
+| Concept | Where (file: lines) | Why it is needed here |
+|---|---|---|
+| Properties | items.py: 98-113; board.py: 38-53 | Read-only access is what stops `item.owner = "x"` from skipping the one-owner rule. Board's properties return tuples of frozen dataclasses and copies of items, so reading state can't change it. |
+| Dunder methods | items.py: 177-184; board.py: 265-281 | `__repr__` gives readable output while debugging. `__eq__` on items and on `Board` (members, column order, every item and its history) is how we prove a save and load round trip loses nothing. |
+| Type hints | Throughout all four files | Every method states what it takes and returns, which makes the contracts between `items.py`, `board.py` and `demo.py` clear. |
+| Class diagram | README.md: "Class diagram" | Shows the composition (`Board` owns users, columns and items) and the inheritance (`BoardItem` and its three kinds) at a glance. |
 
 ## Class diagram
 
@@ -52,22 +107,27 @@ classDiagram
         +users: tuple
         +stages: tuple
         +items: tuple
+        +add_user(user) None
+        +add_stage(stage) None
         +add_item(item) None
         +get_item(item_id) BoardItem
         +claim(item_id, user_id) None
         +move(item_id, stage_name) None
+        +add_comment(item_id, text) None
         +edit_item(item_id, title, description) None
         +delete_item(item_id) None
-        +add_comment(item_id, text) None
         +describe() str
-        +__repr__() str
-        +__eq__(other) bool
+        +save(path) None
     }
     class BoardItem {
         <<abstract>>
+        +owner: str
+        +stage: str
+        +history: list
         +validate() None
         +describe() str
         +details() dict
+        +to_dict() dict
     }
     class User {
         <<dataclass>>
@@ -79,65 +139,24 @@ classDiagram
         +name: str
         +limit: int or None
     }
+    class GiraffeError {
+        <<exception>>
+    }
     Board "1" *-- "0..*" BoardItem : owns copies
     Board "1" *-- "0..*" User : members
-    Board "1" *-- "0..*" WorkflowStage : ordered stages
+    Board "1" *-- "0..*" WorkflowStage : ordered columns
     BoardItem <|-- Task
     BoardItem <|-- Chore
     BoardItem <|-- ReferralRequest
+    GiraffeError <|-- InvalidItemError
+    GiraffeError <|-- InvalidBoardError
+    GiraffeError <|-- DuplicateIDError
+    GiraffeError <|-- NotFoundError
+    GiraffeError <|-- AlreadyClaimedError
+    GiraffeError <|-- StageFullError
+    InvalidBoardError <|-- InvalidUserError
+    InvalidBoardError <|-- InvalidStageError
 ```
-
-Board properties support inspection without exposing mutable board-owned items. Its repr shows a compact summary; equality compares domain state, including stage order and item history. Board methods have parameter and return type hints. The existing item model also provides properties, repr, equality, and type annotations.
-
-## Concept map
-
-Combined from the per-file maps in [Files/Concept_Maps/](Files/Concept_Maps/). Each per-file map has details, code snippets, which files use it, and check-in talking points.
-
-| Concept | File: lines | Why it is needed here |
-|---|---|---|
-| Dataclass | items.py: 35-50 (`WorkflowStage`), 53-64 (`User`) | Stages and users are plain facts with no rules, so a dataclass gives us `__init__`, `__repr__` and `__eq__` without writing them. `frozen=True` stops them from being changed after creation. |
-| Abstract base class | items.py: 74-184 | Every item on a board must be able to validate itself, describe itself, and list its own fields for saving. `BoardItem` forces that, and Python refuses to create a plain `BoardItem`. |
-| Abstract methods | items.py: 132-142 | `validate()`, `describe()` and `details()` are different for every kind, so the base class only declares them and each subclass must write its own. |
-| Inheritance and `super()` | items.py: 193-214, 217-242, 245-273 (`super()` on 199, 223, 255) | A task, a chore and a referral request each *is a* board item, so inheritance is the right fit. `super().__init__` reuses the shared setup (id, title, owner, stage, history) instead of copying it three times. |
-| Polymorphism | items.py: 311-313; used by Board in `add_item()` | The same two calls, `item.validate()` and `item.describe()`, run on any kind of item. No code checks the type, so Board works with all three kinds and any we add later. |
-| Encapsulation with `@property` | items.py: 98-113 | `owner`, `stage` and `history` are read-only from outside. Code can read `item.owner` but can't write `item.owner = "x"`, so nothing can skip Board's one-owner rule. |
-| Controlled state changes | items.py: 118-127 | `set_owner()` and `set_stage()` are the only way to change an item's owner or stage. Board calls them after its checks pass, and each change is logged to the item's history. |
-| Defensive copy | items.py: 93, 106-109 | `history` is copied on the way in and on the way out, so a list from outside can't change the item's real history. |
-| Custom exception | items.py: 146-151, 202-207, 227-235, 259-266 | Bad item data raises `InvalidItemError` (defined in `errors.py`) with a message that says exactly what is wrong, instead of failing silently or printing. |
-| JSON save | items.py: 156-168 (`to_dict`), 45-50 and 59-64 (dataclasses) | Each item saves its shared fields plus its own `details()`, and always includes `"kind"` so we know which class to rebuild later. |
-| JSON load with no if/elif | items.py: 282-295 | `ITEM_KINDS` maps each saved kind to its class. `item_from_dict()` looks the class up and builds it. Adding a new kind is one new line in the dict. |
-| Dunder methods | items.py: 177-184 (`__repr__`, `__eq__`) | `__repr__` gives a readable printout while debugging. `__eq__` lets us check that an item saved and loaded back is the same as the original. |
-| Type hints | throughout | Every method says what it takes and returns, which makes the contract with `board.py` clear. |
-| Self-check | items.py: 302-324 | Running `python items.py` shows polymorphism, a save/load round trip, and a rejected item without needing the rest of the project. |
-| Custom exceptions | errors.py: 15–40| Gives callers specific reasons why Giraffe rejects invalid data or board operations. |
-| Inheritance | errors.py: 15–40 | All domain errors inherit from GiraffeError, allowing the demo to catch expected Giraffe failures together. |
-| Docstrings | Throughout | Explains which rule or failure each exception represents. |
-| Composition | board.py: 30-36 | Board owns members, stages, and items as the future shared state. |
-| Read-only properties | board.py: 39-40; board.py: 43-44; board.py: 47-48 | The name is read-only; user and stage collections are tuples containing frozen dataclasses. |
-| Defensive copies and ownership | board.py: 96-130; board.py: 51-53; board.py: 55-59 | Copy on admission and copy on retrieval prevent external references from changing board-owned items, including nested history. |
-| Validated admission | board.py: 61-75; board.py: 77-94; board.py: 96-130 | Validate data, uniqueness, membership, and capacity before inserting. |
-| Polymorphism | board.py: 96-130; board.py: 196-218 | Call validate() and describe() through BoardItem without branching on concrete subclass. |
-| Ownership invariant | board.py: 132-151 | Reject a second claim before updating owner or history. |
-| Capacity invariant | board.py: 153-182 | Count destination items before moving; same-stage moves change nothing. |
-| Validate before mutation | board.py: 184-194; board.py: 229-264 | Check all supplied fields before changing text or history. |
-| Collection removal | board.py: 220-227 | Reject missing IDs; removal frees stage capacity. |
-| Read-only presentation | board.py: 196-218 | Return a grouped text summary without changing state. |
-| Custom exceptions and type hints | Throughout | Explain domain rejections and document operation contracts. |
-| JSON save (Prithvi) | board.py: 287-309 | `save()` writes the name, users, stages and items to JSON. Stages go in a list so the workflow order survives, and each item's `to_dict()` includes its `"kind"` so the right class can be rebuilt. |
-| Load through public methods (Prithvi) | board.py: 319-362 (rebuild on 348-356) | `load_board()` rebuilds the board with `add_user`, `add_stage` and `add_item`, so every rule runs again on loaded data and nothing outside Board touches `_items`. Stages load before items because `add_item` checks the stage exists. |
-| No if/elif on kind when loading (Prithvi) | board.py: 356 | Each item goes through `item_from_dict()`, which uses the `ITEM_KINDS` lookup, so load works for any kind without type checks. |
-| Custom exceptions for bad files (Prithvi) | board.py: 305-309, 327-346, 357-360 | A missing file, broken JSON or the wrong shape raises `InvalidBoardError` instead of a raw `OSError`/`KeyError`/`TypeError`, so callers only need to catch Giraffe errors. `raise ... from e` keeps the original cause for debugging. |
-| Fail before writing (Prithvi) | board.py: 303 | The JSON text is built in full before the file is opened, so a serialization error can't leave a half-written file. |
-| One class, many board types | demo.py: 30-49, 52-73 | The chores board and the referral board are both plain `Board` objects with different users, stages and items. This shows Giraffe is configurable instead of hard-coding one workflow. |
-| Dataclasses as configuration | demo.py: 34-41, 56-62 | Users and stages are created as frozen `User` and `WorkflowStage` dataclasses and handed to the board. |
-| Stage limit as a rule | demo.py: 60 | "Accepted" has `limit=2` because the company gives two referral slots. Board enforces this, not the demo. |
-| Changes go through Board's methods | demo.py: 81-85, 99-103 | Every claim, move and comment goes through a Board method that checks the rules first. The demo never touches an item's owner or stage directly. |
-| Custom exception caught and printed: double claim | demo.py: 88-93 | Claiming an item that already has an owner raises `AlreadyClaimedError`. The demo catches it by name, prints why, and shows the owner didn't change. |
-| Custom exception caught and printed: full stage | demo.py: 106-111 | Moving a third request into a 2-slot "Accepted" stage raises `StageFullError`. The demo shows the item stayed where it was, proving Board raises before it changes anything. |
-| JSON save and load | demo.py: 114-120 | Each board is saved with `board.save()` and rebuilt with `load_board()`. `loaded == original` uses `Board.__eq__` to prove nothing was lost, including stage order and item history. |
-| Polymorphism | demo.py: 122-123 | The same `item.describe()` call prints every loaded item. The loop never checks whether an item is a `Chore` or a `ReferralRequest`. |
-| Read-only snapshots | demo.py: 93, 111, 122 | `get_item()` and `items` return copies, so the demo can read state without being able to change the board. |
-| Main guard | demo.py: 126-127 | The story only runs when the file is run directly, not when it is imported. |
 
 ## Who built what
 
@@ -148,16 +167,17 @@ Combined from the per-file maps in [Files/Concept_Maps/](Files/Concept_Maps/). E
 | `board.py`: `Board` rules (add, claim, move, comment, edit, delete, describe, `__repr__`, `__eq__`) | Ayush Jain |
 | `board.py`: `Board.save()` and `load_board()` | Prithvi Sunilkumar |
 | `demo.py` | Prithvi Sunilkumar |
-| README and concept maps | Each person wrote the map for their own code; Bhuvana set up the README, Prithvi added how to run and the combined table |
+| Concept maps | Each person wrote the map for their own code; Bhuvana set up the repo and README |
 
 ## AI use
 
 - **items.py and items.md (Bhuvana):** Claude helped structure the file and write the concept map. Reviewed, tested and explainable by the author.
 - **errors.py and board.py rules (Ayush):** No AI in the code. ChatGPT helped prepare the concept maps from the source.
-- **board.py save/load, demo.py, demo.md, and the README run instructions and combined table (Prithvi):** Claude (Anthropic) helped draft the code and documentation. Reviewed, run end to end, and explainable by the author.
+- **board.py save/load, demo.py and demo.md (Prithvi):** Claude helped draft the code and documentation. Reviewed, run end to end, and explainable by the author.
+- **README and concept map consistency (Bhuvana):** Claude helped align all four concept maps and this README with the project guide's required concepts and checked every line reference against the code.
 
 ## Web UI (extra, not part of M1)
 
 Live at https://giraffe-boards.netlify.app/ (source: `docs/index.html`).
 
-This is an optional browser front end built on top of the M1 design. It re-implements the same rules from `board.py`, `items.py` and `errors.py` in JavaScript (one owner per item, stage limits, validation before any change, the same error names) and can export and import the same JSON that `Board.save()` and `load_board()` use. It is not connected to the Python code and is not one of the M1 concepts graded above. AI use: built with Claude (Anthropic) and reviewed by Bhuvana Kanakam.
+An optional browser front end built on top of the M1 design. It re-implements the same rules from `board.py`, `items.py` and `errors.py` in JavaScript and can export and import the same JSON that `Board.save()` and `load_board()` use. It is not connected to the Python code and is not one of the M1 concepts graded above. AI use: built with Claude (Anthropic) and reviewed by Bhuvana Kanakam.

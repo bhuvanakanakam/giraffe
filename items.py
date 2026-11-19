@@ -149,6 +149,11 @@ class BoardItem(ABC):
             raise InvalidItemError("item_id cannot be empty")
         if not isinstance(self.title, str) or not self.title.strip():
             raise InvalidItemError(f"item {self.item_id} needs a title")
+        # history is shown to users and saved to JSON, so every entry must
+        # be text; a hand-edited file could hold numbers or null
+        if not all(isinstance(entry, str) for entry in self._history):
+            raise InvalidItemError(
+                f"item {self.item_id} has history entries that are not text")
 
     def _owner_text(self) -> str:
         return self._owner or "unassigned"
@@ -172,6 +177,12 @@ class BoardItem(ABC):
         # drop "kind" since the constructor doesn't take it; cls is already
         # the right subclass because item_from_dict picked it
         fields = {k: v for k, v in data.items() if k != "kind"}
+        # check history's type before the constructor copies it: list("oops")
+        # would quietly become ['o', 'o', 'p', 's']
+        history = fields.get("history", [])
+        if not isinstance(history, list):
+            raise InvalidItemError(
+                f"item {fields.get('item_id')} history must be a list")
         return cls(**fields)
 
     def __repr__(self) -> str:

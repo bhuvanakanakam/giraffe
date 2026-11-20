@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from board import Board, load_board  # noqa: E402
 from errors import GiraffeError, InvalidItemError, StageFullError  # noqa: E402
-from items import Chore, User, WorkflowStage  # noqa: E402
+from items import Chore, User, WorkflowStage, item_from_dict  # noqa: E402
 import protocol  # noqa: E402
 from protocol import FramingError, ProtocolError  # noqa: E402
 
@@ -165,6 +165,13 @@ class TestHistoryValidation(unittest.TestCase):
             with self.subTest(history=history):
                 with self.assertRaises(InvalidItemError):
                     self.load_with_history(history)
+
+    def test_missing_or_unknown_fields_are_giraffe_errors(self):
+        for data in ({"kind": "chore"},
+                     {"kind": "task", "item_id": "t", "title": "x", "points": 1, "colour": "red"}):
+            with self.subTest(data=data):
+                with self.assertRaises(InvalidItemError):
+                    item_from_dict(data)
 
     def test_good_history_loads(self):
         board = self.load_with_history(["owner set to ana", "Comment: hi"])

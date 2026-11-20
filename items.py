@@ -183,7 +183,13 @@ class BoardItem(ABC):
         if not isinstance(history, list):
             raise InvalidItemError(
                 f"item {fields.get('item_id')} history must be a list")
-        return cls(**fields)
+        # a missing or unknown field makes the constructor raise TypeError;
+        # turn it into our own error so a bad request can't crash the server
+        try:
+            return cls(**fields)
+        except TypeError as e:
+            raise InvalidItemError(
+                f"{cls.KIND} {fields.get('item_id')} has missing or unknown fields") from e
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.item_id!r}, {self.title!r})"

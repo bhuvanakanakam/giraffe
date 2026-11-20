@@ -30,7 +30,7 @@ Line numbers match the version of `errors.py` submitted with M1.
 | Class | Lines | Raised when | Raised in |
 |---|---|---|---|
 | `GiraffeError` | 15-16 | Never directly; the family's parent | |
-| `InvalidItemError` | 18-19 | An item's own data is wrong (empty title, 0 points, bad date) | items.py: 149, 151, 206, 234, 262, 265, 294 |
+| `InvalidItemError` | 18-19 | An item's own data is wrong (empty title, 0 points, bad date, bad history, missing fields) | items.py: 149, 151, 155, 184, 191, 223, 251, 279, 282, 311 |
 | `InvalidBoardError` | 21-22 | Bad board data or a bad save file | board.py: 32, 99, 192, 244, 250, 309, 331, 333, 336, 340, 344, 360 |
 | `InvalidUserError` | 24-25 | A user with no ID or name | board.py: 63, 66, 69 |
 | `InvalidStageError` | 27-28 | A column with no name or a negative limit | board.py: 79, 81, 85 |

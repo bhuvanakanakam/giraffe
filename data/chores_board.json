@@ -1,0 +1,70 @@
+{
+  "name": "Apartment 4B Chores",
+  "users": [
+    {
+      "user_id": "ayush",
+      "name": "Ayush"
+    },
+    {
+      "user_id": "bhuvana",
+      "name": "Bhuvana"
+    },
+    {
+      "user_id": "prithvi",
+      "name": "Prithvi"
+    }
+  ],
+  "stages": [
+    {
+      "name": "Unclaimed",
+      "limit": null
+    },
+    {
+      "name": "In Progress",
+      "limit": null
+    },
+    {
+      "name": "Done",
+      "limit": null
+    }
+  ],
+  "items": [
+    {
+      "kind": "chore",
+      "item_id": "c1",
+      "title": "Take out trash",
+      "description": "",
+      "stage": "In Progress",
+      "owner": "prithvi",
+      "history": [
+        "owner set to prithvi",
+        "moved to In Progress",
+        "Comment: Bins go out before 8 AM"
+      ],
+      "due_date": "2026-11-09"
+    },
+    {
+      "kind": "chore",
+      "item_id": "c2",
+      "title": "Clean kitchen",
+      "description": "",
+      "stage": "Done",
+      "owner": "bhuvana",
+      "history": [
+        "owner set to bhuvana",
+        "moved to Done"
+      ],
+      "due_date": "2026-11-10"
+    },
+    {
+      "kind": "chore",
+      "item_id": "c3",
+      "title": "Buy groceries",
+      "description": "",
+      "stage": "Unclaimed",
+      "owner": null,
+      "history": [],
+      "due_date": "2026-11-11"
+    }
+  ]
+}

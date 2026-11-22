@@ -55,9 +55,10 @@ Run all tests with `python -m unittest discover tests`.
 | `protocol.py` | M2: message framing, the list of requests, reply format, all JSON for the network | [protocol.md](Files/Concept_Maps/protocol.md) |
 | `server.py` | M2: owns the boards, answers requests, saves after every change | [M2 concept map](#m2-concept-map) |
 | `client.py` | M2: the program a person runs to talk to the server | [client.md](Files/Concept_Maps/client.md) |
+| `tests/test_server.py` | M2: 3 tests for server state, TCP replies, and request/response logging | [M2 concept map](#m2-concept-map) |
 | `tests/test_client.py` | M2: 7 tests for the client and the safe save | [client.md](Files/Concept_Maps/client.md) |
 | `data/` | M2: the server's board files, one JSON file per board | |
-| `tests/test_protocol.py` | M2: 20 tests for the protocol and the history check | [protocol.md](Files/Concept_Maps/protocol.md) |
+| `tests/test_protocol.py` | M2: 21 tests for the protocol, claim workflow, and history check | [protocol.md](Files/Concept_Maps/protocol.md) |
 
 ## Protocol (M2)
 
@@ -117,6 +118,7 @@ All fields are text except `item`, which is an object in the same format as an i
 | `StageFullError` | Moving or adding an item into a full column | Connection stays open |
 | `DuplicateIDError` | `add_item` with an ID that is already used | Connection stays open |
 | `InvalidItemError` | `add_item` with bad item data or an unknown `kind` | Connection stays open |
+| `InvalidStageError` | Claiming an `Unclaimed` item when the board has no `To Do` stage | Connection stays open |
 | `InvalidBoardError` | An empty comment, or the server could not save | Connection stays open |
 
 Every error inherits from `GiraffeError`, so one bad request never stops the server.
@@ -144,9 +146,9 @@ Organized by the seven required M2 concepts (M2-R1 to M2-R7) in the project guid
 | M2-R6 · Knowing when to drop a connection | protocol.py: 51-57, 183-187 | After an oversized or cut-off line, the next message's start can't be found, so `FramingError` tells the server to reply and close that one connection. |
 | M2-R6 · Server keeps running after bad requests | `server.py`: `RequestHandler.serve_requests` | Returns a JSON error and continues reading after a bad request. A framing error ends only the current connection. |
 | M2-R6 · Client survives a refused or dropped connection | client.py: 37-43, 67-111, 269-276 | Every socket problem becomes a `ServerConnectionError` with a clear message: server not running (`ConnectionRefusedError`), too slow (`socket.timeout`, 5 seconds), or closed (`read_message` returns `None`, or a reset / cut-off reply). `main()` prints one line and exits instead of showing a traceback. After a timeout the connection is closed, because a late reply would be read as the answer to the next request. |
-| M2-R6 · Rejections are normal replies | client.py: 161-166 | A broken rule comes back as `{"ok": false, ...}`, so the client prints `Rejected: ...` and the user keeps going. Only lost connections raise. |
-| M2-R7 · Networking separate from the domain | protocol.py: whole file; board.py, items.py, errors.py unchanged except the history check | Socket and JSON code lives in `protocol.py`, `server.py` and `client.py`. The M1 classes are reused as they are, and the board rules stay in `Board`. |
-| Optional · Tests for the protocol | tests/test_protocol.py: 38-214 | 20 tests: framing edge cases, every request and rejection, both reply shapes, the history check, and a real round trip over a TCP socket. Run `python -m unittest discover tests`. |
+| M2-R6 · Rejections are normal replies | client.py: 161-166 | A broken rule comes back as `{"ok": false, ...}`, so the client prints `Rejected: ...` and the user keeps going. Only connection or protocol failures raise `ServerConnectionError`. |
+| M2-R7 · Networking separate from the domain | protocol.py: whole file; board.py, items.py, errors.py | Socket and JSON code lives in `protocol.py`, `server.py` and `client.py`. The M1 domain classes are reused, and board rules—including the claim workflow—stay in `Board`. |
+| Optional · Tests for the protocol | tests/test_protocol.py: 38-224 | 21 tests: framing edge cases, every request and rejection, both reply shapes, the claim workflow, the history check, and a real round trip over a TCP socket. Run `python -m unittest discover tests`. |
 | Optional · Tests for the client and safe save | tests/test_client.py: 45-174 | 7 tests: a save and load leaves no temp file, a failed save keeps the old file and deletes the temp file, and the client against fake servers that answer, reject, are not running, are too slow, or hang up, plus a check that the client imports no domain module. |
 | Optional · `--host` / `--port` flags | client.py: 256-260; server.py: `main` | The server flags set the address to listen on. The client flags set the address to connect to. Both use the same defaults from `protocol.py`. |
 | Optional · Request/response logging | `server.py`: `RequestHandler.serve_requests` | The existing logging setup writes entries as `[timestamp] message`, including separate `REQUEST` and `RESPONSE` lines. Each entry includes the client address and action; the response entry records `ok`, the error name, or a send error, and is written after the reply is sent when sending succeeds. |

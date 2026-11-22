@@ -34,7 +34,7 @@ Requirement numbers (M2-R1 to M2-R7) follow the M2 section of the project guide.
 | Concept | Where (file: lines) | Why it is needed here |
 |---|---|---|
 | Default host and port in one place | protocol.py: 37-38 | Server and client import the same defaults, so they can't disagree. The `--host` / `--port` flags in server.py and client.py fall back to these. |
-| Tests for the protocol | tests/test_protocol.py: 38-214 | 20 tests cover framing (multi-line text, two messages back to back, clean close, cut-off and oversized lines), every request and every rejection, both reply shapes, the history fix, and a real round trip over a TCP socket on localhost. Run with `python -m unittest discover tests`. |
+| Tests for the protocol | tests/test_protocol.py: 38-224 | 21 tests cover framing (multi-line text, two messages back to back, clean close, cut-off and oversized lines), every request and every rejection, both reply shapes, the claim workflow, the history fix, and a real round trip over a TCP socket on localhost. Run with `python -m unittest discover tests`. |
 | Type hints | protocol.py: throughout | Every function states what it takes and returns, which makes the contract with server.py and client.py clear. |
 
 ---

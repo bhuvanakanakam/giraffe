@@ -42,6 +42,11 @@ class TestBoardStore(unittest.TestCase):
             self.assertEqual(store.boards["Chores"].get_item("c1").stage,
                              "To Do")
 
+            restarted_store = BoardStore(Path(folder))
+            saved_item = restarted_store.boards["Chores"].get_item("c1")
+            self.assertEqual(saved_item.owner, "ana")
+            self.assertEqual(saved_item.stage, "To Do")
+
 
 class TestGiraffeServer(unittest.TestCase):
     def setUp(self):

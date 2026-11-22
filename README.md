@@ -31,6 +31,19 @@ In existing demo mode, `demo.py` builds a chores board and a referral board, cla
 
 `python items.py` runs a smaller self-check of the item classes on their own.
 
+### M2: server and client
+
+Start the server in one terminal, then the client in another:
+
+```
+python server.py
+python client.py
+```
+
+The client lists the server's boards, then lets you claim, move and comment, the same menu as `demo.py`'s interactive mode. Every action is a request to the server, and rejected actions print `Rejected: ...` so you can keep going. If the server is not running, too slow (5 seconds), or closes the connection, the client prints one clear `Error: ...` line and exits. Both accept `--host` and `--port` (default `127.0.0.1:5050`).
+
+Run all tests with `python -m unittest discover tests`.
+
 ## Files
 
 | File | What it holds | Detailed concept map |
@@ -41,7 +54,8 @@ In existing demo mode, `demo.py` builds a chores board and a referral board, cla
 | `demo.py` | Mode selection, interactive board actions, and the runnable M1 story | [demo.md](Files/Concept_Maps/demo.md) |
 | `protocol.py` | M2: message framing, the list of requests, reply format, all JSON for the network | [protocol.md](Files/Concept_Maps/protocol.md) |
 | `server.py` | M2: owns the boards, answers requests, saves after every change | TODO (Ayush) |
-| `client.py` | M2: the program a person runs to talk to the server | TODO (Prithvi) |
+| `client.py` | M2: the program a person runs to talk to the server | [client.md](Files/Concept_Maps/client.md) |
+| `tests/test_client.py` | M2: 7 tests for the client and the safe save | [client.md](Files/Concept_Maps/client.md) |
 | `data/` | M2: the server's board files, one JSON file per board | |
 | `tests/test_protocol.py` | M2: 20 tests for the protocol and the history check | [protocol.md](Files/Concept_Maps/protocol.md) |
 
@@ -60,6 +74,7 @@ The server and client talk over **TCP sockets**. Every helper below is in `proto
 - The server loads every `*.json` file in `data/` at startup with `load_board()`, so each board is checked by the same rules as in M1. Boards are found by their name.
 - After a request that changes a board succeeds, the server saves that board back to its own file **before** replying. A change the client sees as successful is already on disk.
 - Clients never read or write the files.
+- **A save either fully replaces the board file or leaves the previous version untouched.** `Board.save()` writes to a temporary file and swaps it in with `os.replace`, so a crash mid-save can't leave a half-written board.
 
 ### Requests
 
@@ -112,10 +127,12 @@ Organized by the seven required M2 concepts (M2-R1 to M2-R7) in the project guid
 
 | Concept | Where (file: lines) | Why it is needed here |
 |---|---|---|
-| M2-R1 · Client and server over TCP | TODO (Ayush: server.py; Prithvi: client.py) | |
+| M2-R1 · Client and server over TCP | client.py: 67-111; server.py: TODO (Ayush) | The client opens one TCP connection with `socket.create_connection`, sends each request with `protocol.send_message`, and waits for the reply with `read_message` before sending the next. It never changes a board or reads the save files itself; the server does. |
+| M2-R1 · Client menu as requests | client.py: 130-166, 176-197, 200-244 | The same menu as `demo.py`'s interactive mode, but board names come from `list_boards`, the board from `get_board`, and claim / move / comment are requests. `MENU_ACTIONS` maps each menu number to a function, so there is no if/elif on the choice. |
+| M2-R7 · Client only knows the protocol | client.py: 32, 37-43, 130-145 | Like the lecture's `reg_client.py`, the client never imports `board.py`, `items.py` or `errors.py`. It prints items straight from their JSON, showing each kind's own fields generically, so a new item kind needs no client change. `ServerConnectionError` is a `ConnectionError`, not a domain error. |
 | M2-R2 · Server owns the state, loads at startup | TODO (Ayush: server.py) | |
 | M2-R2 · Save after every successful change | TODO (Ayush: server.py) | |
-| M2-R2 · A crash during save keeps the old file | TODO (Prithvi: board.py `save()`) | |
+| M2-R2 · A crash during save keeps the old file | board.py: 305-320 | `save()` writes to `path + ".tmp"`, then swaps it in with `os.replace`, which happens in one step. A crash mid-write only breaks the temp file, so the server never restarts from a half-written board. If writing fails, the temp file is deleted and `InvalidBoardError` is raised. |
 | M2-R2 · Loaded state is checked, bad history rejected | items.py: 152-156, 180-192 | The server loads its boards from JSON at startup, so a damaged file must not load quietly. A saved `"history": "oops"` used to become `['o', 'o', 'p', 's']`; `from_dict()` now checks the type before the constructor copies it, and `_check_common()` checks every entry is text, so `load_board()` raises `InvalidItemError`. A missing or unknown item field also becomes `InvalidItemError` instead of a `TypeError`, so a bad `add_item` request can't crash the server. |
 | M2-R3 · Message framing: one JSON object per line | protocol.py: 31-38, 145-150, 166-188 | TCP is a stream of bytes with no boundaries, so every message ends in `\n`. `json.dumps` writes newlines inside text as `\n`, so a real newline only ever ends a message. `read_message()` returns `None` when the other side closes cleanly. |
 | M2-R3 · Message size limit | protocol.py: 35, 148-149, 181-185 | Without a limit, one client sending a line with no newline could make the server read forever. `readline(limit)` stops at 64 KB. |
@@ -126,10 +143,12 @@ Organized by the seven required M2 concepts (M2-R1 to M2-R7) in the project guid
 | M2-R6 · Bad requests become error replies | protocol.py: 41-48, 123-124, 153-163 | `ProtocolError` inherits from `GiraffeError`, so the server answers a malformed request and a broken rule with the same `except GiraffeError`. Broken JSON or the wrong shape never crashes the reader. |
 | M2-R6 · Knowing when to drop a connection | protocol.py: 51-57, 183-187 | After an oversized or cut-off line, the next message's start can't be found, so `FramingError` tells the server to reply and close that one connection. |
 | M2-R6 · Server keeps running after bad requests | TODO (Ayush: server.py) | |
-| M2-R6 · Client survives a refused or dropped connection | TODO (Prithvi: client.py) | |
+| M2-R6 · Client survives a refused or dropped connection | client.py: 37-43, 67-111, 269-276 | Every socket problem becomes a `ServerConnectionError` with a clear message: server not running (`ConnectionRefusedError`), too slow (`socket.timeout`, 5 seconds), or closed (`read_message` returns `None`, or a reset / cut-off reply). `main()` prints one line and exits instead of showing a traceback. After a timeout the connection is closed, because a late reply would be read as the answer to the next request. |
+| M2-R6 · Rejections are normal replies | client.py: 161-166 | A broken rule comes back as `{"ok": false, ...}`, so the client prints `Rejected: ...` and the user keeps going. Only lost connections raise. |
 | M2-R7 · Networking separate from the domain | protocol.py: whole file; board.py, items.py, errors.py unchanged except the history check | Socket and JSON code lives in `protocol.py`, `server.py` and `client.py`. The M1 classes are reused as they are, and the board rules stay in `Board`. |
 | Optional · Tests for the protocol | tests/test_protocol.py: 38-214 | 20 tests: framing edge cases, every request and rejection, both reply shapes, the history check, and a real round trip over a TCP socket. Run `python -m unittest discover tests`. |
-| Optional · `--host` / `--port` flags | TODO (Ayush, Prithvi) | |
+| Optional · Tests for the client and safe save | tests/test_client.py: 45-174 | 7 tests: a save and load leaves no temp file, a failed save keeps the old file and deletes the temp file, and the client against fake servers that answer, reject, are not running, are too slow, or hang up, plus a check that the client imports no domain module. |
+| Optional · `--host` / `--port` flags | client.py: 256-260; server.py: TODO (Ayush) | `argparse` lets the client reach a server on another machine or port, defaulting to `protocol.DEFAULT_HOST` / `DEFAULT_PORT` so client and server agree. |
 | Optional · Logging every request | TODO (Ayush: server.py) | |
 
 ## M1 concept map
@@ -176,10 +195,10 @@ Organized by the six required M1 concepts (R1 to R6) in the project guide, follo
 
 | Concept | Where (file: lines) | Why it is needed here |
 |---|---|---|
-| Save to JSON | board.py: 287-309; items.py: 45-46, 59-60, 161-173 | Each object writes its own dict. Items always include `"kind"` because JSON has no idea which class an object came from. Columns are saved as a list so the workflow order survives. The full JSON text is built (line 303) before the file is opened, so a failure can't leave a half-written file. |
-| Load through the public methods | board.py: 319-362 (rebuild on 348-356) | `load_board()` rebuilds the board with `add_user`, `add_stage` and `add_item`, so loaded data passes the same rule checks as new data. A hand-edited file with three items in a 2-slot column raises `StageFullError` instead of loading. |
+| Save to JSON | board.py: 287-320; items.py: 45-46, 59-60, 161-173 | Each object writes its own dict. Items always include `"kind"` because JSON has no idea which class an object came from. Columns are saved as a list so the workflow order survives. The full JSON text is built (line 303) before the file is opened, so a failure can't leave a half-written file. |
+| Load through the public methods | board.py: 330-373 (rebuild on 359-367) | `load_board()` rebuilds the board with `add_user`, `add_stage` and `add_item`, so loaded data passes the same rule checks as new data. A hand-edited file with three items in a 2-slot column raises `StageFullError` instead of loading. |
 | Rebuild the right subclass | items.py: 175-192, 299-312 | `item_from_dict()` picks the class from `"kind"` and `from_dict()` builds it, so a saved chore comes back as a `Chore`. An unknown kind raises `InvalidItemError`. |
-| Bad files raise custom errors | board.py: 305-309, 327-344, 357-360 | A missing file, broken JSON or a wrong shape raises `InvalidBoardError` instead of a raw `OSError` or `KeyError`, and `from e` keeps the original cause for debugging. |
+| Bad files raise custom errors | board.py: 316-320, 338-355, 368-371 | A missing file, broken JSON or a wrong shape raises `InvalidBoardError` instead of a raw `OSError` or `KeyError`, and `from e` keeps the original cause for debugging. |
 
 ### R6. Runnable demo and README
 
@@ -274,7 +293,7 @@ classDiagram
 | Repo setup, README, concept map consistency | Bhuvana Kanakam | Claude helped align the maps with the project guide |
 | M2 `protocol.py`, `tests/test_protocol.py`, README protocol section, history check in `items.py` | Bhuvana Kanakam | Claude helped structure the code, tests and documentation |
 | M2 `server.py` | Ayush Jain | TODO |
-| M2 `client.py`, safe save in `board.py` | Prithvi Sunilkumar | TODO |
+| M2 `client.py`, `tests/test_client.py`, safe save in `board.py` | Prithvi Sunilkumar | Claude helped draft the code, tests and concept map |
 | Concept maps | Each person wrote the map for their own code | As listed above |
 
 ## AI use
@@ -283,6 +302,7 @@ classDiagram
 - **errors.py and board.py rules (Ayush):** No AI in the code. ChatGPT helped prepare the concept maps from the source.
 - **demo.py interactive mode and mode menu (Ayush):** ChatGPT helped with the code. Reviewed, tested and explainable by the author.
 - **board.py save/load, demo.py and demo.md (Prithvi):** Claude helped draft the code and documentation. Reviewed, run end to end, and explainable by the author.
+- **M2 client.py, tests/test_client.py, safe save and client.md (Prithvi):** Claude helped draft the code, the tests and the documentation. Reviewed, run against a test server, and explainable by the author.
 - **M2 protocol.py, tests, README protocol section and the history check (Bhuvana):** Claude helped structure the code, the tests and the documentation. Reviewed, tested and explainable by the author.
 - **README and concept map consistency (Bhuvana):** Claude helped align all four concept maps and this README with the project guide's required concepts and checked every line reference against the code.
 

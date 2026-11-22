@@ -300,11 +300,11 @@ classDiagram
 
 ## AI use
 
-- **items.py and items.md (Bhuvana):** Claude helped structure the file and write the concept map. Reviewed, tested and explainable by the author.
-- **errors.py and board.py rules (Ayush):** No AI in the code. ChatGPT helped prepare the concept maps from the source.
-- **demo.py interactive mode and mode menu (Ayush):** ChatGPT helped with the code. Reviewed, tested and explainable by the author.
-- **board.py save/load, demo.py and demo.md (Prithvi):** Claude helped draft the code and documentation. Reviewed, run end to end, and explainable by the author.
+- **M1 items.py and items.md (Bhuvana):** Claude helped structure the file and write the concept map. Reviewed, tested and explainable by the author.
+- **M1 errors.py and board.py rules (Ayush):** No AI in the code. ChatGPT helped prepare the concept maps from the source.
+- **M1 demo.py interactive mode and mode menu (Ayush):** ChatGPT helped with the code. Reviewed, tested and explainable by the author.
+- **M1 board.py save/load, demo.py and demo.md (Prithvi):** Claude helped draft the code and documentation. Reviewed, run end to end, and explainable by the author.
 - **M2 server.py (Ayush):** ChatGPT helped draft the server and test request handling.
 - **M2 client.py, tests/test_client.py, safe save and client.md (Prithvi):** Claude helped draft the code, the tests and the documentation. Reviewed, run against a test server, and explainable by the author.
 - **M2 protocol.py, tests, README protocol section and the history check (Bhuvana):** Claude helped structure the code, the tests and the documentation. Reviewed, tested and explainable by the author.
-- **README and concept map consistency (Bhuvana):** Claude and ChatGPT helped align all four concept maps and this README with the project guide's required concepts and checked every line reference against the code.
+- **README and concept map consistency (Bhuvana, Ayush):** Claude and ChatGPT helped align all four concept maps and this README with the project guide's required concepts and checked every line reference against the code.

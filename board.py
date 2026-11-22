@@ -130,7 +130,7 @@ class Board:
         self._items[item.item_id] = item
 
     def claim(self, item_id: str, user_id: str) -> None:
-        """Assign an unclaimed item to a board member."""
+        """Assign an unclaimed item and move it out of ``Unclaimed``."""
         if item_id not in self._items:
             raise NotFoundError(
                 f"Item {item_id!r} does not exist"
@@ -148,7 +148,25 @@ class Board:
                 f"Item {item_id!r} already belongs to {item.owner!r}"
             )
 
+        if item.stage == "Unclaimed":
+            if "To Do" not in self._stages:
+                raise InvalidStageError(
+                    "A claimed item needs a 'To Do' stage"
+                )
+
+            stage = self._stages["To Do"]
+            count = sum(
+                existing.stage == "To Do"
+                for existing in self._items.values()
+            )
+            if stage.limit is not None and count >= stage.limit:
+                raise StageFullError(
+                    f"Stage {stage.name!r} has reached its limit"
+                )
+
         item.set_owner(user_id)
+        if item.stage == "Unclaimed":
+            item.set_stage("To Do")
 
     def move(self, item_id: str, stage_name: str) -> None:
         """Move an item without exceeding the destination's limit."""

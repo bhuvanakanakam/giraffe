@@ -20,6 +20,10 @@
       "limit": null
     },
     {
+      "name": "To Do",
+      "limit": null
+    },
+    {
       "name": "In Progress",
       "limit": null
     },
@@ -61,9 +65,12 @@
       "item_id": "c3",
       "title": "Buy groceries",
       "description": "",
-      "stage": "Unclaimed",
-      "owner": null,
-      "history": [],
+      "stage": "To Do",
+      "owner": "ayush",
+      "history": [
+        "owner set to ayush",
+        "moved to To Do"
+      ],
       "due_date": "2026-11-11"
     }
   ]

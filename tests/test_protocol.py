@@ -35,6 +35,15 @@ def small_board() -> Board:
     return board
 
 
+def claim_board() -> Board:
+    board = Board("Chores")
+    board.add_user(User("ana", "Ana"))
+    board.add_stage(WorkflowStage("Unclaimed"))
+    board.add_stage(WorkflowStage("To Do"))
+    board.add_item(Chore("c1", "Trash", due_date="2026-11-20", stage="Unclaimed"))
+    return board
+
+
 class TestFraming(unittest.TestCase):
     def test_round_trip(self):
         message = {"action": "claim", "board": "Chores", "item_id": "c1", "user_id": "ana"}
@@ -121,6 +130,13 @@ class TestRequests(unittest.TestCase):
 
 
 class TestResponses(unittest.TestCase):
+    def test_claim_moves_unclaimed_item_to_to_do(self):
+        board = claim_board()
+        board.claim("c1", "ana")
+        item = board.get_item("c1")
+        self.assertEqual(item.owner, "ana")
+        self.assertEqual(item.stage, "To Do")
+
     def test_ok(self):
         self.assertEqual(protocol.ok_response([1]), {"ok": True, "data": [1]})
 

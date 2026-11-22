@@ -25,7 +25,7 @@ Choose a mode when prompted:
 
 In interactive mode, **0** returns from the action menu to board selection, and **0** at board selection returns to mode selection. Changes remain available while switching boards in the same interactive session. Interactive changes are held in memory and are not saved to JSON; starting interactive mode again creates fresh sample boards. You can also exit with Ctrl+C or end-of-input.
 
-For example, select mode `1`, board `1`, action `1`, item `c1`, and user `ayush` to claim the trash chore. Then select action `2`, item `c1`, and stage `In Progress` to move it.
+For example, select mode `1`, board `1`, action `1`, item `c1`, and user `ayush` to claim the trash chore. Claiming it automatically moves it from `Unclaimed` to `To Do`.
 
 In existing demo mode, `demo.py` builds a chores board and a referral board, claims and moves items, adds a comment, and shows two rejected operations caught as custom exceptions (`AlreadyClaimedError` for a double claim, `StageFullError` for a full "Accepted" column). It then saves each board to JSON (`chores_board.json`, `referral_board.json`), loads it back, and prints `loaded == original -> True`.
 
@@ -100,7 +100,7 @@ All fields are text except `item`, which is an object in the same format as an i
 ### Responses
 
 ```json
-{"ok": true,  "data": {"kind": "chore", "item_id": "c1", "owner": "ayush", "stage": "Unclaimed", "...": "..."}}
+{"ok": true,  "data": {"kind": "chore", "item_id": "c1", "owner": "ayush", "stage": "To Do", "...": "..."}}
 {"ok": false, "error": "AlreadyClaimedError", "message": "Item 'c1' already belongs to 'prithvi'"}
 ```
 
@@ -182,7 +182,7 @@ Organized by the six required M1 concepts (R1 to R6) in the project guide, follo
 
 | Concept | Where (file: lines) | Why it is needed here |
 |---|---|---|
-| Invariant: one owner per item | board.py: 132-151 | `claim()` checks the item exists, the user is a member and the item is unclaimed (line 146) before calling `set_owner()` (line 151). A second claim raises `AlreadyClaimedError` and changes nothing. |
+| Invariant: one owner per item | board.py: 135-175 | `claim()` checks the item exists, the user is a member and the item is unclaimed before calling `set_owner()`. When the item is in `Unclaimed`, it also moves to the configured `To Do` stage. A second claim raises `AlreadyClaimedError` and changes nothing. |
 | Invariant: column limits | board.py: 118-127 (`add_item`), 153-182 (`move`) | Both methods count the items already in the target column and raise `StageFullError` before anything changes. This is what keeps the 2-slot "Accepted" column at 2. |
 | Validated setup | board.py: 61-94 | `add_user()` and `add_stage()` reject empty IDs, negative limits and duplicates, so a board can't start in a broken state. |
 | Other changes go through methods | board.py: 184-194, 220-227, 229-264 | Comments, deletes and edits each have one method that validates every input first and only then changes the item. |

@@ -19,7 +19,7 @@ Line numbers match the version of `board.py` submitted with M1.
 | R1 · Class for the domain's owner | board.py: 25-281 | A board has rules that involve many objects at once (is this column full? is this user a member?), so it is a regular class with methods, not a dataclass. |
 | R2 · Polymorphism, no type checks | board.py: 101, 216, 298 | Board calls `item.validate()`, `item.describe()` and `item.to_dict()` on any item. It never asks whether it holds a Task, Chore or ReferralRequest, so a new kind of item needs no change here. |
 | R3 · Composition | board.py: 30-36 | Board owns three collections: members (`_users`), columns (`_stages`) and items (`_items`). It is the single owner of the state that M2 moves onto the server and M3 protects with a lock. |
-| R4 · Invariant: one owner per item | board.py: 132-151 | `claim()` checks the item exists, the user is a member, and the item is unclaimed (line 146) before it calls `set_owner()` (line 151). A second claim raises `AlreadyClaimedError` and changes nothing. |
+| R4 · Invariant: one owner per item | board.py: 135-175 | `claim()` checks the item exists, the user is a member, and the item is unclaimed before it calls `set_owner()`. An item claimed from `Unclaimed` is automatically moved to `To Do`; a second claim raises `AlreadyClaimedError` and changes nothing. |
 | R4 · Invariant: column limits | board.py: 118-127, 153-182 | `add_item()` and `move()` count the items already in the target column and raise `StageFullError` before anything changes. This is what keeps the 2-slot "Accepted" column at 2. |
 | R4 · Validated setup | board.py: 61-94 | `add_user()` and `add_stage()` reject empty IDs, negative limits and duplicates, so a board can't start in a broken state. |
 | R4 · Other changes go through methods | board.py: 184-194, 220-227, 229-264 | Comments, deletes and edits each have one method that validates every input first and only then changes the item. |
@@ -56,9 +56,11 @@ Dictionaries keyed by ID make lookups and duplicate checks one step. The undersc
 if item.is_claimed:
     raise AlreadyClaimedError(...)
 item.set_owner(user_id)
+if item.stage == "Unclaimed":
+    item.set_stage("To Do")
 ```
 
-Every rule is checked before the single line that changes state. If any check fails, the exception leaves the board exactly as it was. `demo.py` prints the owner and column right after each rejection to show this.
+Every rule is checked before the state changes. If any check fails, the exception leaves the board exactly as it was. Claiming an item in `Unclaimed` also moves it to `To Do`; that stage must exist on the board. `demo.py` prints the owner and column right after each rejection to show this.
 
 ### 3. Copies in and out (lines 51-59, 100)
 

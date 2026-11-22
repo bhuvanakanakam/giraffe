@@ -305,9 +305,3 @@ classDiagram
 - **M2 client.py, tests/test_client.py, safe save and client.md (Prithvi):** Claude helped draft the code, the tests and the documentation. Reviewed, run against a test server, and explainable by the author.
 - **M2 protocol.py, tests, README protocol section and the history check (Bhuvana):** Claude helped structure the code, the tests and the documentation. Reviewed, tested and explainable by the author.
 - **README and concept map consistency (Bhuvana):** Claude helped align all four concept maps and this README with the project guide's required concepts and checked every line reference against the code.
-
-## Web UI (extra, not part of M1)
-
-Live at https://giraffe-boards.netlify.app/ (source: `docs/index.html`).
-
-An optional browser front end built on top of the M1 design. It re-implements the same rules from `board.py`, `items.py` and `errors.py` in JavaScript and can export and import the same JSON that `Board.save()` and `load_board()` use. It is not connected to the Python code and is not one of the M1 concepts graded above. AI use: built with Claude (Anthropic) and reviewed by Bhuvana Kanakam.

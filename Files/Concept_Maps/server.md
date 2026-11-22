@@ -26,7 +26,7 @@
 | Concept | Where (file: lines) | Why it is needed here |
 |---|---|---|
 | `--host` and `--port` | server.py: 171–176 | The server and client default to the same address from `protocol.py`. |
-| Request logging | server.py: 152–153 | Each request logs the client address, action, and outcome. |
+| Request/response logging | server.py: 129–166, 186–187 | The existing logging setup writes `[timestamp] message` entries with separate `REQUEST` and `RESPONSE` lines. Both include the client address and action; the response entry records the success outcome, error name, or send error, and is written after the reply is sent when sending succeeds. |
 
 ## Each concept in detail
 

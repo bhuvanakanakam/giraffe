@@ -36,6 +36,7 @@ from items import item_from_dict
 
 
 DATA_DIRECTORY = Path(__file__).resolve().parent / "data"
+LOGGER = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +119,7 @@ class RequestHandler(socketserver.StreamRequestHandler):
         try:
             self.serve_requests()
         except OSError as error:
-            logging.info("Connection from %s ended: %s", self.client_address, error)
+            LOGGER.info("Connection from %s ended: %s", self.client_address, error)
 
     def serve_requests(self) -> None:
         while True:
@@ -135,6 +136,7 @@ class RequestHandler(socketserver.StreamRequestHandler):
                 if (isinstance(requested_action, str)
                         and requested_action in protocol.REQUEST_FIELDS):
                     action = requested_action
+                LOGGER.info("REQUEST client=%s action=%s", self.client_address, action)
                 response = self.server.store.handle_request(message)
                 payload = protocol.encode(response)
             except GiraffeError as error:
@@ -149,9 +151,17 @@ class RequestHandler(socketserver.StreamRequestHandler):
                     response["message"] = "The request was rejected"
                     payload = protocol.encode(response)
 
-            logging.info("%s %s: %s", self.client_address, action,
-                         "ok" if response["ok"] else response["error"])
-            self.request.sendall(payload)
+            if action == "<unreadable>":
+                LOGGER.info("REQUEST client=%s action=%s", self.client_address, action)
+            try:
+                self.request.sendall(payload)
+            except OSError as error:
+                LOGGER.info("RESPONSE client=%s action=%s error=%s",
+                            self.client_address, action, error)
+                raise
+            LOGGER.info("RESPONSE client=%s action=%s outcome=%s",
+                        self.client_address, action,
+                        "ok" if response["ok"] else response["error"])
             if close_connection:
                 return
 
@@ -173,7 +183,8 @@ def main() -> None:
     parser.add_argument("--host", default=protocol.DEFAULT_HOST)
     parser.add_argument("--port", type=int, default=protocol.DEFAULT_PORT)
     args = parser.parse_args()
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    logging.basicConfig(level=logging.INFO,
+                        format="[%(asctime)s] %(message)s")
     try:
         store = BoardStore(DATA_DIRECTORY)
         with GiraffeServer((args.host, args.port), store) as server:

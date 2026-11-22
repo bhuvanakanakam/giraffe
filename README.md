@@ -149,7 +149,7 @@ Organized by the seven required M2 concepts (M2-R1 to M2-R7) in the project guid
 | Optional · Tests for the protocol | tests/test_protocol.py: 38-214 | 20 tests: framing edge cases, every request and rejection, both reply shapes, the history check, and a real round trip over a TCP socket. Run `python -m unittest discover tests`. |
 | Optional · Tests for the client and safe save | tests/test_client.py: 45-174 | 7 tests: a save and load leaves no temp file, a failed save keeps the old file and deletes the temp file, and the client against fake servers that answer, reject, are not running, are too slow, or hang up, plus a check that the client imports no domain module. |
 | Optional · `--host` / `--port` flags | client.py: 256-260; server.py: `main` | The server flags set the address to listen on. The client flags set the address to connect to. Both use the same defaults from `protocol.py`. |
-| Optional · Logging every request | `server.py`: `RequestHandler.serve_requests` | Logs the client address, action, and outcome for every request. |
+| Optional · Request/response logging | `server.py`: `RequestHandler.serve_requests` | The existing logging setup writes entries as `[timestamp] message`, including separate `REQUEST` and `RESPONSE` lines. Each entry includes the client address and action; the response entry records `ok`, the error name, or a send error, and is written after the reply is sent when sending succeeds. |
 
 ## M1 concept map
 

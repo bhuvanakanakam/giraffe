@@ -20,6 +20,10 @@
       "limit": null
     },
     {
+      "name": "To Do",
+      "limit": null
+    },
+    {
       "name": "In Progress",
       "limit": null
     },
@@ -38,6 +42,7 @@
       "owner": "prithvi",
       "history": [
         "owner set to prithvi",
+        "moved to To Do",
         "moved to In Progress",
         "Comment: Bins go out before 8 AM"
       ],
@@ -52,6 +57,7 @@
       "owner": "bhuvana",
       "history": [
         "owner set to bhuvana",
+        "moved to To Do",
         "moved to Done"
       ],
       "due_date": "2026-11-10"

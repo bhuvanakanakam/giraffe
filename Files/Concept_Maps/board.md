@@ -1,9 +1,9 @@
 # Concept map: board.py
 
-**Authors:** Ayush Jain (ayushjain_01): board rules, lines 1-281. Prithvi Sunilkumar: persistence, lines 283-362.
+**Authors:** Ayush Jain (ayushjain_01): board rules, lines 1-281. Prithvi Sunilkumar: persistence, lines 283-373.
 **Team:** 404NotFound
 **Milestone:** M1 Domain Model
-**File:** `board.py` (362 lines)
+**File:** `board.py` (373 lines)
 **AI assistance:** Board rules: no AI in the code; ChatGPT helped prepare this map. Persistence: Claude helped draft `save()`, `load_board()` and their map rows. Claude helped align the format with the other maps. Both authors reviewed and can explain every line.
 
 `Board` is the class that owns everything on one board: its members, its columns (stages) and its items. Every change goes through a Board method that checks the rules first. In M2 this object becomes the server's shared state.
@@ -19,14 +19,14 @@ Line numbers match the version of `board.py` submitted with M1.
 | R1 · Class for the domain's owner | board.py: 25-281 | A board has rules that involve many objects at once (is this column full? is this user a member?), so it is a regular class with methods, not a dataclass. |
 | R2 · Polymorphism, no type checks | board.py: 101, 216, 298 | Board calls `item.validate()`, `item.describe()` and `item.to_dict()` on any item. It never asks whether it holds a Task, Chore or ReferralRequest, so a new kind of item needs no change here. |
 | R3 · Composition | board.py: 30-36 | Board owns three collections: members (`_users`), columns (`_stages`) and items (`_items`). It is the single owner of the state that M2 moves onto the server and M3 protects with a lock. |
-| R4 · Invariant: one owner per item | board.py: 132-151 | `claim()` checks the item exists, the user is a member, and the item is unclaimed (line 146) before it calls `set_owner()` (line 151). A second claim raises `AlreadyClaimedError` and changes nothing. |
+| R4 · Invariant: one owner per item | board.py: 135-175 | `claim()` checks the item exists, the user is a member, and the item is unclaimed before it calls `set_owner()`. An item claimed from `Unclaimed` is automatically moved to `To Do`; a second claim raises `AlreadyClaimedError` and changes nothing. |
 | R4 · Invariant: column limits | board.py: 118-127, 153-182 | `add_item()` and `move()` count the items already in the target column and raise `StageFullError` before anything changes. This is what keeps the 2-slot "Accepted" column at 2. |
 | R4 · Validated setup | board.py: 61-94 | `add_user()` and `add_stage()` reject empty IDs, negative limits and duplicates, so a board can't start in a broken state. |
 | R4 · Other changes go through methods | board.py: 184-194, 220-227, 229-264 | Comments, deletes and edits each have one method that validates every input first and only then changes the item. |
 | R4 · Defensive copies | board.py: 51-53, 55-59, 100 | Items are copied on the way in and on the way out, so code outside Board can never hold a reference to a board-owned item and change it behind Board's back. |
-| R5 · Save to JSON | board.py: 287-309 | `save()` asks each object for its own dict, keeps columns as a list so the workflow order survives, and builds the full JSON text (line 303) before opening the file so a failure can't leave a half-written file. |
-| R5 · Load through public methods | board.py: 319-362 | `load_board()` rebuilds the board with `add_user`, `add_stage` and `add_item` (lines 348-356), so loaded data passes the same rule checks as new data. Users and columns load first because `add_item` checks they exist. |
-| R5 · Bad files raise custom errors | board.py: 305-309, 327-344, 357-360 | A missing file, broken JSON or a wrong shape raises `InvalidBoardError` instead of a raw `OSError` or `KeyError`, and `from e` keeps the original cause for debugging. |
+| R5 · Save to JSON | board.py: 287-320 | `save()` asks each object for its own dict, keeps columns as a list so the workflow order survives, and builds the full JSON text (line 303) before opening the file so a failure can't leave a half-written file. |
+| R5 · Load through public methods | board.py: 330-373 | `load_board()` rebuilds the board with `add_user`, `add_stage` and `add_item` (lines 359-367), so loaded data passes the same rule checks as new data. Users and columns load first because `add_item` checks they exist. |
+| R5 · Bad files raise custom errors | board.py: 316-320, 338-355, 368-371 | A missing file, broken JSON or a wrong shape raises `InvalidBoardError` instead of a raw `OSError` or `KeyError`, and `from e` keeps the original cause for debugging. |
 
 ## Optional depth
 
@@ -56,15 +56,17 @@ Dictionaries keyed by ID make lookups and duplicate checks one step. The undersc
 if item.is_claimed:
     raise AlreadyClaimedError(...)
 item.set_owner(user_id)
+if item.stage == "Unclaimed":
+    item.set_stage("To Do")
 ```
 
-Every rule is checked before the single line that changes state. If any check fails, the exception leaves the board exactly as it was. `demo.py` prints the owner and column right after each rejection to show this.
+Every rule is checked before the state changes. If any check fails, the exception leaves the board exactly as it was. Claiming an item in `Unclaimed` also moves it to `To Do`; that stage must exist on the board. `demo.py` prints the owner and column right after each rejection to show this.
 
 ### 3. Copies in and out (lines 51-59, 100)
 
 `add_item()` stores a deep copy of the item it is given, and `items` / `get_item()` hand back deep copies. Without this, a caller could keep the original item and call `set_owner()` on it directly, skipping the one-owner check.
 
-### 4. Save and load (lines 287-362, Prithvi)
+### 4. Save and load (lines 287-373, Prithvi)
 
 ```python
 for user_data in data["users"]:

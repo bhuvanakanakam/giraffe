@@ -17,8 +17,8 @@ and tested every line and can explain all of it. Cited in the README.
 """
 from __future__ import annotations  # lets str | None hints work on Python 3.9
 import json
+import os
 from copy import deepcopy
-
 from items import BoardItem, User, WorkflowStage, item_from_dict
 from errors import InvalidBoardError, InvalidStageError, NotFoundError, DuplicateIDError, StageFullError, InvalidUserError, AlreadyClaimedError
 
@@ -130,7 +130,7 @@ class Board:
         self._items[item.item_id] = item
 
     def claim(self, item_id: str, user_id: str) -> None:
-        """Assign an unclaimed item to a board member."""
+        """Assign an unclaimed item and move it out of ``Unclaimed``."""
         if item_id not in self._items:
             raise NotFoundError(
                 f"Item {item_id!r} does not exist"
@@ -148,7 +148,25 @@ class Board:
                 f"Item {item_id!r} already belongs to {item.owner!r}"
             )
 
+        if item.stage == "Unclaimed":
+            if "To Do" not in self._stages:
+                raise InvalidStageError(
+                    "A claimed item needs a 'To Do' stage"
+                )
+
+            stage = self._stages["To Do"]
+            count = sum(
+                existing.stage == "To Do"
+                for existing in self._items.values()
+            )
+            if stage.limit is not None and count >= stage.limit:
+                raise StageFullError(
+                    f"Stage {stage.name!r} has reached its limit"
+                )
+
         item.set_owner(user_id)
+        if item.stage == "Unclaimed":
+            item.set_stage("To Do")
 
     def move(self, item_id: str, stage_name: str) -> None:
         """Move an item without exceeding the destination's limit."""
@@ -302,10 +320,21 @@ class Board:
         # leave a half-written file behind.
         text = json.dumps(data, indent=2)
 
+        # M2 (Sean's feedback): never write over the real file directly.
+        # Write a temp file next to it, then swap it in with os.replace,
+        # which happens in one step. If we crash while writing, only the
+        # temp file is broken and the old board file is still whole.
+        tmp_path = f"{path}.tmp"
         try:
-            with open(path, "w", encoding="utf-8") as f:
+            with open(tmp_path, "w", encoding="utf-8") as f:
                 f.write(text)
+                f.flush()
+                os.fsync(f.fileno())  # make sure the bytes reach the disk
+            os.replace(tmp_path, path)
         except OSError as e:
+            # Clean up the broken temp file; the old board file is untouched.
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
             raise InvalidBoardError(f"Could not save board to {path!r}: {e}") from e
 
 

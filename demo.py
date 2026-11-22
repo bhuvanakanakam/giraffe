@@ -36,7 +36,8 @@ def build_chores_board() -> Board:
         board.add_user(user)
 
     # Stage order is insertion order, so this is the workflow left to right.
-    for stage in [WorkflowStage("Unclaimed"), WorkflowStage("In Progress"),
+    for stage in [WorkflowStage("Unclaimed"), WorkflowStage("To Do"),
+                  WorkflowStage("In Progress"),
                   WorkflowStage("Done")]:
         board.add_stage(stage)
 

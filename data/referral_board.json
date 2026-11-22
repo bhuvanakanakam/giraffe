@@ -1,0 +1,70 @@
+{
+  "name": "Amazon SDE Intern Referrals",
+  "users": [
+    {
+      "user_id": "ayush",
+      "name": "Ayush"
+    },
+    {
+      "user_id": "bhuvana",
+      "name": "Bhuvana"
+    }
+  ],
+  "stages": [
+    {
+      "name": "Requested",
+      "limit": null
+    },
+    {
+      "name": "Accepted",
+      "limit": 2
+    },
+    {
+      "name": "Submitted",
+      "limit": null
+    }
+  ],
+  "items": [
+    {
+      "kind": "referral",
+      "item_id": "r1",
+      "title": "SDE intern referral",
+      "description": "",
+      "stage": "Accepted",
+      "owner": "ayush",
+      "history": [
+        "owner set to ayush",
+        "moved to Accepted"
+      ],
+      "company": "Amazon",
+      "applicant": "Ana"
+    },
+    {
+      "kind": "referral",
+      "item_id": "r2",
+      "title": "SDE intern referral",
+      "description": "",
+      "stage": "Accepted",
+      "owner": "bhuvana",
+      "history": [
+        "owner set to bhuvana",
+        "moved to Accepted"
+      ],
+      "company": "Amazon",
+      "applicant": "Ben"
+    },
+    {
+      "kind": "referral",
+      "item_id": "r3",
+      "title": "SDE intern referral",
+      "description": "",
+      "stage": "Requested",
+      "owner": "ayush",
+      "history": [
+        "owner set to ayush"
+      ],
+      "company": "Amazon",
+      "applicant": "Eli"
+    }
+  ]
+}

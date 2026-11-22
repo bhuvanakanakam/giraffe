@@ -305,4 +305,4 @@ classDiagram
 - **M2 server.py (Ayush):** ChatGPT helped draft the server and test request handling.
 - **M2 client.py, tests/test_client.py, safe save and client.md (Prithvi):** Claude helped draft the code, the tests and the documentation. Reviewed, run against a test server, and explainable by the author.
 - **M2 protocol.py, tests, README protocol section and the history check (Bhuvana):** Claude helped structure the code, the tests and the documentation. Reviewed, tested and explainable by the author.
-- **README and concept map consistency (Bhuvana):** Claude helped align all four concept maps and this README with the project guide's required concepts and checked every line reference against the code.
+- **README and concept map consistency (Bhuvana):** Claude and ChatGPT helped align all four concept maps and this README with the project guide's required concepts and checked every line reference against the code.

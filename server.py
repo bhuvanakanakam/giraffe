@@ -11,7 +11,7 @@ What lives here:
   - RequestHandler: JSON requests and replies over TCP
   - GiraffeServer: one client connection at a time
 
-AI Use: OpenAI Codex helped draft the server and test request handling.
+AI Use: ChatGPT helped draft the server and test request handling.
 Cited in the README.
 """
 
